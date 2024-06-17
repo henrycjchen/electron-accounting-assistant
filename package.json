@@ -1,7 +1,7 @@
 {
-  "name": "vite-electron-builder",
+  "name": "accounting-assistant",
   "description": "Secure boilerplate for Electron app based on Vite",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "author": {
@@ -16,6 +16,7 @@
     "build:preload": "cd ./packages/preload && vite build",
     "build:renderer": "cd ./packages/renderer && vite build",
     "compile": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.yml --dir --config.asar=false",
+    "compile:x64": "cross-env MODE=production npm run build && electron-builder build --config electron-builder.yml --win nsis:x64",
     "test": "npm run test:main && npm run test:preload && npm run test:renderer && npm run test:e2e",
     "test:e2e": "npm run build && vitest run",
     "test:main": "vitest run -r packages/main --passWithNoTests",
@@ -52,6 +53,10 @@
     "vue-tsc": "2.0.21"
   },
   "dependencies": {
-    "electron-updater": "6.2.1"
+    "ant-design-vue": "^4.2.3",
+    "electron-updater": "6.2.1",
+    "dayjs": "^1.11.11",
+    "exceljs": "^4.4.0",
+    "xlsx": "^0.18.5"
   }
 }
