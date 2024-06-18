@@ -8,12 +8,10 @@
 </template>
 
 <script lang="ts" setup>
-import {generateOutboundFile} from '#preload';
-import {message} from 'ant-design-vue';
+import {defineEmits} from 'vue';
+const emit = defineEmits(['generateOutboundFile']);
 
 async function handleClick() {
-  message.loading('生成中');
-  await generateOutboundFile();
-  message.success('生成完成');
+  emit('generateOutboundFile');
 }
 </script>

@@ -118,6 +118,10 @@ function writeExcel({
     properties: {
       defaultRowHeight: 16,
     },
+    pageSetup: {
+      scale: 9,
+      horizontalCentered: true,
+    },
   });
   worksheet.getColumn('A').width = 20;
   worksheet.getColumn('B').width = 18.17;

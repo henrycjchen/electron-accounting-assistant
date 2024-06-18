@@ -1,25 +1,12 @@
-import {ipcMain, dialog} from 'electron';
+import {ipcMain} from 'electron';
 import {processExcel} from './helpers/process-excel';
-import {exec} from 'child_process';
-import path from 'path';
 
-ipcMain.handle('generateOutboundFile', async () => {
-  console.log('generateOutboundFile');
-  const filePathList = dialog.showOpenDialogSync({
-    properties: ['openFile'],
-    filters: [{name: '全量发票导出文件', extensions: ['xlsx']}],
-  });
+ipcMain.handle('generateOutboundFile', async (event, files: {path: string; type: 'bills'}[]) => {
 
-  if (!filePathList) {
+  if (!files?.length) {
     return;
   }
-  const invalidData = await processExcel(filePathList[0]);
-
-  if (process.platform === 'darwin') {
-    exec('open -a Finder ' + path.dirname(filePathList[0]));
-  } else if (process.platform === 'win32') {
-    exec('start explorer ' + path.dirname(filePathList[0]));
-  }
+  const invalidData = await processExcel(files[0].path);
 
   return invalidData;
 });
