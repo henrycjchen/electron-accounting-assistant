@@ -13,11 +13,13 @@ ipcMain.handle('generateOutboundFile', async () => {
   if (!filePathList) {
     return;
   }
-  await processExcel(filePathList[0]);
+  const invalidData = await processExcel(filePathList[0]);
 
   if (process.platform === 'darwin') {
     exec('open -a Finder ' + path.dirname(filePathList[0]));
   } else if (process.platform === 'win32') {
     exec('start explorer ' + path.dirname(filePathList[0]));
   }
+
+  return invalidData;
 });

@@ -11,32 +11,84 @@ export async function processExcel(filePath: string) {
   // 获取所有单元格数据
   const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-  const formattedData = formatData(data as Record<string, string>[]);
+  const {validData, invalidData} = washData(data as Record<string, string>[]);
 
-  await writeExcel(formattedData, path.dirname(filePath)+`/出库凭证${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`);
+  await writeExcel({
+    validData: formatData(validData),
+    invalidData: formatData(invalidData),
+    filePath: path.dirname(filePath) + `/出库凭证${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`,
+  });
+
+  return invalidData;
 }
 
+const invalidProductType = ['机动车', '劳务'];
+
 interface IFormattedData {
+  code: string;
   buyCompany: string;
   date: string;
   product: string;
+  productType: string;
   unit: string;
   count: string;
+  notes: string;
 }
-function formatData(data: Record<string, string>[]): IFormattedData[][] {
+function washData(data: Record<string, string>[]) {
   const slimData = data
     .slice(1)
     .sort((a, b) => dayjs(a[8]).unix() - dayjs(b[8]).unix())
     .map(item => ({
-      buyCompany: item[7],
-      date: dayjs(item[8]).format('MM/DD/YYYY'),
-      product: item[11].split('*').at(-1),
-      unit: item[13],
-      count: item[14],
+      code: item[3],
+      buyCompany: item[7].trim(),
+      date: dayjs(item[8].trim()).format('YYYY年MM月DD日'),
+      product:
+        item[11]
+          .trim()
+          .split('*')[2]
+          .match(/([\u4e00-\u9fa5]+)/)?.[1] || '',
+      productType: item[11].trim().split('*')[1],
+      unit: item[13]?.trim() || '',
+      count: item[14]?.trim() || '',
+      notes: item[26]?.trim() || '',
     })) as IFormattedData[];
 
+  const invalidCodes = slimData.reduce((acc, item) => {
+    const code = item.notes.match(/(\d+)/)?.[0];
+    if (item.notes.includes('被红冲蓝字') && code) {
+      acc.push(code);
+    }
+    return acc;
+  }, [] as string[]);
+
+  const validData = [];
+  const invalidData = [];
+  for (const item of slimData) {
+    if (
+      invalidProductType.includes(item.productType) ||
+      item.notes.includes('被红冲蓝字') ||
+      invalidCodes.includes(item.code)
+    ) {
+      if (
+        item.notes.includes('被红冲蓝字') &&
+        !slimData.some(obj => obj.code.length && obj.code === item.notes.match(/(\d+)/)?.[0])
+      ) {
+        invalidData.push(item);
+      }
+    } else {
+      validData.push(item);
+    }
+  }
+
+  return {validData, invalidData};
+}
+
+function formatData(slimData: IFormattedData[]): IFormattedData[][] {
   const result = [];
-  let last = [slimData[0]];
+  let last = [];
+  if (slimData.length) {
+    last.push(slimData[0]);
+  }
   for (let i = 1; i < slimData.length; i++) {
     const item = slimData[i];
     if (item.date !== last[0].date || item.buyCompany !== last[0].buyCompany || last.length >= 7) {
@@ -46,27 +98,37 @@ function formatData(data: Record<string, string>[]): IFormattedData[][] {
     }
     last.push(item);
   }
-  result.push(last);
+  if (last.length) {
+    result.push(last);
+  }
   return result;
 }
 
-function writeExcel(data: IFormattedData[][], dist: string) {
+function writeExcel({
+  validData,
+  invalidData,
+  filePath,
+}: {
+  validData: IFormattedData[][];
+  invalidData: IFormattedData[][];
+  filePath: string;
+}) {
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('出  库  凭  证', {
+  const worksheet = workbook.addWorksheet('出库凭证', {
     properties: {
-      defaultRowHeight: 12,
+      defaultRowHeight: 16,
     },
   });
-  worksheet.getColumn('A').width = 16;
-  worksheet.getColumn('B').width = 24;
-  worksheet.getColumn('C').width = 16;
-  worksheet.getColumn('D').width = 6;
-  worksheet.getColumn('E').width = 16;
+  worksheet.getColumn('A').width = 20;
+  worksheet.getColumn('B').width = 18.17;
+  worksheet.getColumn('C').width = 20;
+  worksheet.getColumn('D').width = 4.33;
+  worksheet.getColumn('E').width = 20;
 
   let row = 1;
-  data.forEach((items, index) => {
+  validData.forEach((items, index) => {
     worksheet.mergeCells(`A${row}:E${row}`);
-    worksheet.getCell(`A${row}`).value = '出库凭证';
+    worksheet.getCell(`A${row}`).value = '出  库  凭  证';
     worksheet.getCell(`A${row}`).font = {
       bold: true,
       size: 22,
@@ -78,54 +140,34 @@ function writeExcel(data: IFormattedData[][], dist: string) {
     worksheet.getCell(`A${row}`).border = {
       bottom: {style: 'double'},
     };
-    worksheet.getRow(row).height = 30;
+    worksheet.getRow(row).height = 37.5;
 
     row += 1;
     worksheet.mergeCells(`A${row}:B${row}`);
     worksheet.getCell(`A${row}`).value = `领取人：${items[0].buyCompany}`;
     worksheet.getCell(`A${row}`).alignment = {
       vertical: 'middle',
+      wrapText: true,
     };
     worksheet.getCell(`C${row}`).value = items[0].date;
     worksheet.getCell(`C${row}`).alignment = {
       vertical: 'middle',
     };
-    worksheet.getRow(row).height = 21;
+    worksheet.getRow(row).height = 30;
 
     row += 1;
     worksheet.getCell(`A${row}`).value = '用途';
     setWrapBorder(worksheet.getCell(`A${row}`));
-    worksheet.getCell(`A${row}`).alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-    };
     worksheet.getCell(`B${row}`).value = '品名';
-    worksheet.getCell(`B${row}`).alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-    };
     setWrapBorder(worksheet.getCell(`B${row}`));
     worksheet.getCell(`C${row}`).value = '规格';
-    worksheet.getCell(`C${row}`).alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-    };
     setWrapBorder(worksheet.getCell(`C${row}`));
     worksheet.getCell(`D${row}`).value = '单位';
-    worksheet.getCell(`D${row}`).alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-    };
     setWrapBorder(worksheet.getCell(`D${row}`));
     worksheet.getCell(`E${row}`).value = '数量';
-    worksheet.getCell(`E${row}`).alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-    };
     setWrapBorder(worksheet.getCell(`E${row}`));
-    worksheet.getRow(row).height = 14;
+    worksheet.getRow(row).height = 18.75;
 
-    let total = 0;
     items.forEach((product, index) => {
       row += 1;
       if (index === 0) {
@@ -134,36 +176,15 @@ function writeExcel(data: IFormattedData[][], dist: string) {
         worksheet.getCell(`A${row}`).value = '';
       }
       setWrapBorder(worksheet.getCell(`A${row}`));
-      worksheet.getCell(`A${row}`).alignment = {
-        vertical: 'middle',
-        horizontal: 'center',
-      };
       worksheet.getCell(`B${row}`).value = product.product;
-      worksheet.getCell(`B${row}`).alignment = {
-        vertical: 'middle',
-        horizontal: 'center',
-      };
       setWrapBorder(worksheet.getCell(`B${row}`));
       worksheet.getCell(`C${row}`).value = '';
-      worksheet.getCell(`C${row}`).alignment = {
-        vertical: 'middle',
-        horizontal: 'center',
-      };
       setWrapBorder(worksheet.getCell(`C${row}`));
       worksheet.getCell(`D${row}`).value = product.unit;
-      worksheet.getCell(`D${row}`).alignment = {
-        vertical: 'middle',
-        horizontal: 'center',
-      };
       setWrapBorder(worksheet.getCell(`D${row}`));
-      worksheet.getCell(`E${row}`).value = product.count;
-      worksheet.getCell(`E${row}`).alignment = {
-        vertical: 'middle',
-        horizontal: 'center',
-      };
+      worksheet.getCell(`E${row}`).value = Number(product.count);
       setWrapBorder(worksheet.getCell(`E${row}`));
-      total += Number(product.count);
-      worksheet.getRow(row).height = 14;
+      worksheet.getRow(row).height = 18.75;
     });
     for (let i = items.length; i < 7; i++) {
       row += 1;
@@ -172,24 +193,15 @@ function writeExcel(data: IFormattedData[][], dist: string) {
       setWrapBorder(worksheet.getCell(`C${row}`));
       setWrapBorder(worksheet.getCell(`D${row}`));
       setWrapBorder(worksheet.getCell(`E${row}`));
-      worksheet.getRow(row).height = 14;
+      worksheet.getRow(row).height = 18.75;
     }
 
     row += 1;
     worksheet.mergeCells(`A${row}:D${row}`);
     worksheet.getCell(`A${row}`).value = `合${' '.repeat(20)}计`;
-    worksheet.getCell(`A${row}`).alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-    };
     setWrapBorder(worksheet.getCell(`A${row}`));
-    worksheet.getCell(`E${row}`).value = total;
-    worksheet.getCell(`E${row}`).alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-    };
     setWrapBorder(worksheet.getCell(`E${row}`));
-    worksheet.getRow(row).height = 14;
+    worksheet.getRow(row).height = 18.75;
 
     row += 1;
     worksheet.mergeCells(`A${row}:E${row}`);
@@ -197,17 +209,117 @@ function writeExcel(data: IFormattedData[][], dist: string) {
       vertical: 'middle',
       horizontal: 'right',
     };
-    worksheet.getCell(`A${row}`).value = `保管人：倪${' '.repeat(20)}`;
-    worksheet.getRow(row).height = 18;
+    worksheet.getCell(`A${row}`).value = `保管人：陈${' '.repeat(20)}`;
+    worksheet.getRow(row).height = 23.25;
 
     if (index % 2 === 0) {
       row += 11;
     } else {
-      row += 7;
+      row += 3;
     }
   });
 
-  return workbook.xlsx.writeFile(dist);
+  worksheet.getColumn('H').width = 20;
+  worksheet.getColumn('I').width = 18.17;
+  worksheet.getColumn('J').width = 20;
+  worksheet.getColumn('K').width = 4.33;
+  worksheet.getColumn('L').width = 20;
+  row = 1;
+  invalidData.forEach((items, index) => {
+    worksheet.mergeCells(`H${row}:L${row}`);
+    worksheet.getCell(`H${row}`).value = '入  库  凭  证';
+    worksheet.getCell(`H${row}`).font = {
+      bold: true,
+      size: 22,
+    };
+    worksheet.getCell(`H${row}`).alignment = {
+      vertical: 'middle',
+      horizontal: 'center',
+    };
+    worksheet.getCell(`H${row}`).border = {
+      bottom: {style: 'double'},
+    };
+    worksheet.getRow(row).height = 37.5;
+
+    row += 1;
+    worksheet.mergeCells(`H${row}:I${row}`);
+    worksheet.getCell(`H${row}`).value = `送货人：${items[0].buyCompany}`;
+    worksheet.getCell(`H${row}`).alignment = {
+      vertical: 'middle',
+      wrapText: true,
+    };
+    worksheet.getCell(`J${row}`).value = items[0].date;
+    worksheet.getCell(`J${row}`).alignment = {
+      vertical: 'middle',
+    };
+    worksheet.getRow(row).height = 30;
+
+    row += 1;
+    worksheet.getCell(`H${row}`).value = '用途';
+    setWrapBorder(worksheet.getCell(`H${row}`));
+    worksheet.getCell(`I${row}`).value = '品名';
+    setWrapBorder(worksheet.getCell(`I${row}`));
+    worksheet.getCell(`J${row}`).value = '规格';
+    setWrapBorder(worksheet.getCell(`J${row}`));
+    worksheet.getCell(`K${row}`).value = '单位';
+    setWrapBorder(worksheet.getCell(`K${row}`));
+    worksheet.getCell(`L${row}`).value = '数量';
+    setWrapBorder(worksheet.getCell(`L${row}`));
+    worksheet.getRow(row).height = 18.75;
+
+    items.forEach((product, index) => {
+      row += 1;
+      if (index === 0) {
+        worksheet.getCell(`H${row}`).value = '退货入库';
+      } else {
+        worksheet.getCell(`H${row}`).value = '';
+      }
+      setWrapBorder(worksheet.getCell(`H${row}`));
+      worksheet.getCell(`I${row}`).value = product.product;
+      setWrapBorder(worksheet.getCell(`I${row}`));
+      worksheet.getCell(`J${row}`).value = '';
+      setWrapBorder(worksheet.getCell(`J${row}`));
+      worksheet.getCell(`K${row}`).value = product.unit;
+      setWrapBorder(worksheet.getCell(`K${row}`));
+      worksheet.getCell(`L${row}`).value = -Number(product.count);
+      setWrapBorder(worksheet.getCell(`L${row}`));
+      worksheet.getRow(row).height = 18.75;
+    });
+
+    for (let i = items.length; i < 7; i++) {
+      row += 1;
+      setWrapBorder(worksheet.getCell(`H${row}`));
+      setWrapBorder(worksheet.getCell(`I${row}`));
+      setWrapBorder(worksheet.getCell(`J${row}`));
+      setWrapBorder(worksheet.getCell(`K${row}`));
+      setWrapBorder(worksheet.getCell(`L${row}`));
+      worksheet.getRow(row).height = 18.75;
+    }
+
+    row += 1;
+    worksheet.mergeCells(`H${row}:K${row}`);
+    worksheet.getCell(`H${row}`).value = `合${' '.repeat(20)}计`;
+    setWrapBorder(worksheet.getCell(`H${row}`));
+    setWrapBorder(worksheet.getCell(`L${row}`));
+    worksheet.getRow(row).height = 18.75;
+
+    row += 1;
+    worksheet.mergeCells(`H${row}:L${row}`);
+    worksheet.getCell(`H${row}`).alignment = {
+      vertical: 'middle',
+      horizontal: 'right',
+    };
+    worksheet.getCell(`H${row}`).value = `保管人：陈${' '.repeat(20)}`;
+    worksheet.getRow(row).height = 23.25;
+
+    if (index % 2 === 0) {
+      row += 11;
+    } else {
+      row += 3;
+    }
+  });
+
+  return workbook.xlsx.writeFile(filePath);
 }
 
 function setWrapBorder(cell: ExcelJS.Cell) {
@@ -216,5 +328,9 @@ function setWrapBorder(cell: ExcelJS.Cell) {
     left: {style: 'thin', color: {argb: 'FF000000'}},
     bottom: {style: 'thin', color: {argb: 'FF000000'}},
     right: {style: 'thin', color: {argb: 'FF000000'}},
+  };
+  cell.alignment = {
+    vertical: 'middle',
+    horizontal: 'center',
   };
 }

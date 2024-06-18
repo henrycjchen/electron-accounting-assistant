@@ -12,9 +12,8 @@ import {generateOutboundFile} from '#preload';
 import {message} from 'ant-design-vue';
 
 async function handleClick() {
-    message.loading('生成中');
-    await generateOutboundFile();
-    message.success('生成完成');
+  message.loading('生成中');
+  await generateOutboundFile();
+  message.success('生成完成');
 }
 </script>
-
