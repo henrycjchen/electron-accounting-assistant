@@ -1,4 +1,4 @@
-import {app} from 'electron';
+import {app, Menu} from 'electron';
 import './security-restrictions';
 import {restoreOrCreateWindow} from '/@/mainWindow';
 import {platform} from 'node:process';
@@ -14,7 +14,9 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 app.on('second-instance', restoreOrCreateWindow);
-
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
+});
 /**
  * Disable Hardware Acceleration to save more system resources.
  */

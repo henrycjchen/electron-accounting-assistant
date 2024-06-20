@@ -31,7 +31,7 @@ interface IFormattedData {
   product: string;
   productType: string;
   unit: string;
-  count: string;
+  count: number;
   notes: string;
 }
 function washData(data: Record<string, string>[]) {
@@ -49,7 +49,7 @@ function washData(data: Record<string, string>[]) {
           .match(/([\u4e00-\u9fa5]+)/)?.[1] || '',
       productType: item[11].trim().split('*')[1],
       unit: item[13]?.trim() || '',
-      count: item[14]?.trim() || '',
+      count: Number(item[14]?.trim()) || 0,
       notes: item[26]?.trim() || '',
     })) as IFormattedData[];
 
@@ -84,23 +84,71 @@ function washData(data: Record<string, string>[]) {
 }
 
 function formatData(slimData: IFormattedData[]): IFormattedData[][] {
-  const result = [];
-  let last = [];
-  if (slimData.length) {
-    last.push(slimData[0]);
-  }
-  for (let i = 1; i < slimData.length; i++) {
-    const item = slimData[i];
-    if (item.date !== last[0].date || item.buyCompany !== last[0].buyCompany || last.length >= 7) {
-      result.push(last);
-      last = [item];
-      continue;
+  const companySplitted = splitByCompany(slimData);
+  const dateSplitted = splitByDate(companySplitted);
+  const countMerged = mergeCounts(dateSplitted);
+  const countSplitted = splitByCount(countMerged);
+
+  return countSplitted;
+}
+
+function splitByCompany(data: IFormattedData[]) {
+  const companySorted = data.sort((a, b) =>
+    a.buyCompany.localeCompare(b.buyCompany, 'zh-Hans-CN', {sensitivity: 'accent'}),
+  );
+  const map: Record<string, IFormattedData[]> = {};
+  companySorted.forEach(item => {
+    if (map[item.buyCompany]) {
+      map[item.buyCompany].push(item);
+    } else {
+      map[item.buyCompany] = [item];
     }
-    last.push(item);
-  }
-  if (last.length) {
-    result.push(last);
-  }
+  });
+  return Object.values(map);
+}
+
+function splitByDate(data: IFormattedData[][]) {
+  const dateSortedData = data.map(items =>
+    items.sort((a, b) => dayjs(a.date).unix() - dayjs(b.date).unix()),
+  );
+  const result: IFormattedData[][] = [];
+  dateSortedData.forEach(items => {
+    const map: Record<string, IFormattedData[]> = {};
+    items.forEach(item => {
+      if (map[item.date]) {
+        map[item.date].push(item);
+      } else {
+        map[item.date] = [item];
+      }
+    });
+    result.push(...Object.values(map));
+  });
+  return result;
+}
+
+function mergeCounts(data: IFormattedData[][]) {
+  return data.map(items => {
+    const map: Record<string, IFormattedData> = {};
+    items.sort((a, b) => a.product.localeCompare(b.product, 'zh-Hans-CN', {sensitivity: 'accent'}));
+    items.forEach(item => {
+      if (map[item.product]) {
+        map[item.product].count += item.count;
+      } else {
+        map[item.product] = item;
+      }
+    });
+    return Object.values(map);
+  });
+}
+
+function splitByCount(data: IFormattedData[][]) {
+  const result: IFormattedData[][] = [];
+  data.forEach(items => {
+    const count = Math.ceil(items.length / 7);
+    for (let i = 0; i < count; i++) {
+      result.push(items.slice(i * 7, (i + 1) * 7));
+    }
+  });
   return result;
 }
 
