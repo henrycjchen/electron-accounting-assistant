@@ -305,16 +305,14 @@ function formatData(slimData: IFormattedOutputData[]): IFormattedOutputData[][] 
   const dateSplitted = splitByDate(companySplitted);
   const countMerged = mergeCounts(dateSplitted);
   const countSplitted = splitByCount(countMerged);
+  const dateSorted = sortByDate(countSplitted);
 
-  return countSplitted;
+  return dateSorted;
 }
 
 function splitByCompany(data: IFormattedOutputData[]) {
-  const companySorted = data.sort((a, b) =>
-    a.buyCompany.localeCompare(b.buyCompany, 'zh-Hans-CN', {sensitivity: 'accent'}),
-  );
   const map: Record<string, IFormattedOutputData[]> = {};
-  companySorted.forEach(item => {
+  data.forEach(item => {
     if (map[item.buyCompany]) {
       map[item.buyCompany].push(item);
     } else {
@@ -326,7 +324,9 @@ function splitByCompany(data: IFormattedOutputData[]) {
 
 function splitByDate(data: IFormattedOutputData[][]) {
   const dateSortedData = data.map(items =>
-    items.sort((a, b) => dayjs(a.date).unix() - dayjs(b.date).unix()),
+    items.sort(
+      (a, b) => dayjs(a.date, 'YYYY年MM月DD日').unix() - dayjs(b.date, 'YYYY年MM月DD日').unix(),
+    ),
   );
   const result: IFormattedOutputData[][] = [];
   dateSortedData.forEach(items => {
@@ -341,6 +341,12 @@ function splitByDate(data: IFormattedOutputData[][]) {
     result.push(...Object.values(map));
   });
   return result;
+}
+
+function sortByDate(data: IFormattedOutputData[][]) {
+  return data.sort(
+    (a, b) => dayjs(a[0].date, 'YYYY年MM月DD日').unix() - dayjs(b[0].date, 'YYYY年MM月DD日').unix(),
+  );
 }
 
 function mergeCounts(data: IFormattedOutputData[][]) {

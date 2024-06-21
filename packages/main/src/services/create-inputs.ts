@@ -23,8 +23,6 @@ export function createInputs({
   const {validData} = washData(data as string[][]);
   const validDataFormatted = formatData(validData, outputs);
 
-  console.log('validDataFormatted', validDataFormatted);
-
   action({
     validData: validDataFormatted,
     filePath: path.dirname(filePath) + `/入库凭证${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`,
@@ -201,7 +199,7 @@ function splitByOutput(
   outputs: IFormattedOutputData[][],
 ): IFormattedInputData[][] {
   const result = [];
-  const inputCount = randomRange(outputs.length * 0.5, outputs.length * 0.8 + 1);
+  const inputCount = randomRange(5, 9);
   const inputMap: Record<string, IFormattedInputData> = slimData.reduce((map, item) => {
     if (map[item.product]) {
       map[item.product].count += item.count;
@@ -211,12 +209,13 @@ function splitByOutput(
     return map;
   }, {} as Record<string, IFormattedInputData>);
 
+  let preUnix = dayjs(outputs[0][0].date, 'YYYY年MM月DD日').startOf('month').unix();
   for (let i = 0; i < inputCount; i++) {
-    const unix = randomRange(
-      dayjs(outputs[1][0].date, 'YYYY年MM月DD日').startOf('month').unix(),
+    preUnix = Math.min(
+      randomRange(preUnix, dayjs.unix(preUnix).add(4, 'day').unix()),
       dayjs(outputs[i][0].date, 'YYYY年MM月DD日').startOf('day').unix(),
     );
-    const inputDate = dayjs.unix(unix).format('YYYY年MM月DD日');
+    const inputDate = dayjs.unix(preUnix).format('YYYY年MM月DD日');
 
     if (i === inputCount - 1) {
       const input = Object.values(inputMap)
@@ -250,7 +249,7 @@ function splitByOutput(
           };
         })
         .filter(Boolean) as IFormattedInputData[];
-      const leftCount = randomRange((7 - input.length) * 0.5, 7 - input.length+1);
+      const leftCount = randomRange((7 - input.length) * 0.5, 7 - input.length + 1);
       if (leftCount) {
         const outputProducts = outputs[i].map(item => item.product);
         const difference = Object.values(inputMap)
