@@ -1,7 +1,6 @@
 <template>
   <a-space>
     <a-upload
-      v-model:file-list="fileList"
       name="avatar"
       list-type="picture-card"
       class="avatar-uploader"
@@ -28,7 +27,6 @@
       </a-space>
     </a-upload>
     <a-upload
-      v-model:file-list="fileList"
       name="avatar"
       list-type="picture-card"
       class="avatar-uploader"
@@ -61,7 +59,7 @@ import {ref, defineEmits} from 'vue';
 import {PlusOutlined, FileDoneOutlined} from '@ant-design/icons-vue';
 import type {UploadChangeParam} from 'ant-design-vue';
 const emit = defineEmits(['change']);
-const fileList: {path: string; type: string}[] = [];
+const files: Record<string, string> = {};
 const uploadFlag = ref<Record<string, string>>({bills: '', calculate: ''});
 
 const handleChange = (info: UploadChangeParam, type: string) => {
@@ -76,13 +74,12 @@ const handleChange = (info: UploadChangeParam, type: string) => {
 };
 
 function addFile(file: {path: string; type: string}) {
-  const item = fileList.find(item => item.type === file.type);
-  if (item) {
-    item.path = file.path;
+  if (files[file.type]) {
+    files[file.type] = file.path;
   } else {
-    fileList.push(file);
+    files[file.type] = file.path;
   }
-  emit('change', fileList);
+  emit('change', files);
 }
 </script>
 <style scoped></style>

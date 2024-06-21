@@ -10,13 +10,13 @@ import UploadFiles from './components/UploadFiles.vue';
 import {generateOutboundFile} from '#preload';
 import {message} from 'ant-design-vue';
 
-let files: {path: string; type: string}[] = [];
-async function handleUploadChange(uploads: {path: string; type: string}[]) {
+let files = {};
+async function handleUploadChange(uploads: Record<string, string>) {
   files = uploads;
 }
 
 async function handleGenerateOutboundFile() {
-  if (!files.length) {
+  if (!Object.values(files).length) {
     message.error('请先上传文件');
     return;
   }
