@@ -16,13 +16,18 @@ async function handleUploadChange(uploads: Record<string, string>) {
 }
 
 async function handleGenerateOutboundFile() {
-  if (!files.bills) {
-    message.error('请先上传全量发票查询导出结果');
+  if (!files.outboundInvoices) {
+    message.error('请先上传出库发票');
     return;
   }
 
   if (!files.calculate) {
     message.error('请先上传测算表');
+    return;
+  }
+
+  if (!files.calculate) {
+    message.error('请先上传购进发票');
     return;
   }
 

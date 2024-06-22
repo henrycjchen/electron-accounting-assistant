@@ -1,13 +1,15 @@
 import ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
-import path from 'path';
 import XLSX from 'xlsx';
-import type {IFormattedOutputData} from '../types';
+import type {IFormattedOutboundData} from '../types';
 import {setWrapBorder} from '../helpers/excel-helper';
 
 const invalidProductType = ['机动车', '劳务'];
 
-export function createOutputs(filePath: string) {
+/**
+ * 出库凭证
+ */
+export function createOutbound({filePath, dirname}:{filePath: string; dirname: string}) {
   const workbook = XLSX.readFile(filePath);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
@@ -22,7 +24,7 @@ export function createOutputs(filePath: string) {
   action({
     validData: validDataFormatted,
     invalidData: formatData(invalidData),
-    filePath: path.dirname(filePath) + `/出库凭证${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`,
+    filePath: dirname + '/出库凭证.xlsx',
   });
 
   return validDataFormatted;
@@ -33,8 +35,8 @@ function action({
   invalidData,
   filePath,
 }: {
-  validData: IFormattedOutputData[][];
-  invalidData: IFormattedOutputData[][];
+  validData: IFormattedOutboundData[][];
+  invalidData: IFormattedOutboundData[][];
   filePath: string;
 }) {
   const workbook = new ExcelJS.Workbook();
@@ -255,20 +257,20 @@ function washData(data: string[][]) {
     .slice(1)
     .filter(item => item && item.length)
     .map(item => ({
-      code: item[3],
-      sellCompany: item[5].trim(),
-      buyCompany: item[7].trim(),
-      date: dayjs(item[8].trim()).unix(),
+      code: item[3]?.trim() || '',
+      sellCompany: item[5]?.trim() || '',
+      buyCompany: item[7]?.trim() || '',
+      date: dayjs(item[8]?.trim()).startOf('day').unix(),
       product:
         item[11]
-          .trim()
+          ?.trim()
           .split('*')[2]
           .match(/([a-zA-Z0-9-+\u4e00-\u9fa5]+)/)?.[1] || '',
-      productType: item[11].trim().split('*')[1],
+      productType: item[11]?.trim().split('*')[1] || '',
       unit: item[13]?.trim() || '',
       count: Number(item[14]) || 0,
       notes: item[26]?.trim() || '',
-    })) as IFormattedOutputData[];
+    })) as IFormattedOutboundData[];
 
   const invalidCodes = slimData.reduce((acc, item) => {
     const code = item.notes.match(/(\d+)/)?.[0];
@@ -300,8 +302,8 @@ function washData(data: string[][]) {
   return {validData, invalidData};
 }
 
-function formatData(slimData: IFormattedOutputData[]): IFormattedOutputData[][] {
-  const companySplitted = splitByCompany(slimData);
+function formatData(slimData: IFormattedOutboundData[]): IFormattedOutboundData[][] {
+  const companySplitted = mergeByCompany(slimData);
   const dateSplitted = splitByDate(companySplitted);
   const countMerged = mergeCounts(dateSplitted);
   const countSplitted = splitByCount(countMerged);
@@ -310,8 +312,8 @@ function formatData(slimData: IFormattedOutputData[]): IFormattedOutputData[][] 
   return dateSorted;
 }
 
-function splitByCompany(data: IFormattedOutputData[]) {
-  const map: Record<string, IFormattedOutputData[]> = {};
+function mergeByCompany(data: IFormattedOutboundData[]) {
+  const map: Record<string, IFormattedOutboundData[]> = {};
   data.forEach(item => {
     if (map[item.buyCompany]) {
       map[item.buyCompany].push(item);
@@ -322,15 +324,15 @@ function splitByCompany(data: IFormattedOutputData[]) {
   return Object.values(map);
 }
 
-function splitByDate(data: IFormattedOutputData[][]) {
+function splitByDate(data: IFormattedOutboundData[][]) {
   const dateSortedData = data.map(items =>
     items.sort(
       (a, b) => a.date - b.date,
     ),
   );
-  const result: IFormattedOutputData[][] = [];
+  const result: IFormattedOutboundData[][] = [];
   dateSortedData.forEach(items => {
-    const map: Record<string, IFormattedOutputData[]> = {};
+    const map: Record<string, IFormattedOutboundData[]> = {};
     items.forEach(item => {
       if (map[item.date]) {
         map[item.date].push(item);
@@ -343,15 +345,15 @@ function splitByDate(data: IFormattedOutputData[][]) {
   return result;
 }
 
-function sortByDate(data: IFormattedOutputData[][]) {
+function sortByDate(data: IFormattedOutboundData[][]) {
   return data.sort(
     (a, b) => a[0].date - b[0].date,
   );
 }
 
-function mergeCounts(data: IFormattedOutputData[][]) {
+function mergeCounts(data: IFormattedOutboundData[][]) {
   return data.map(items => {
-    const map: Record<string, IFormattedOutputData> = {};
+    const map: Record<string, IFormattedOutboundData> = {};
     items.sort((a, b) => a.product.localeCompare(b.product, 'zh-Hans-CN', {sensitivity: 'accent'}));
     items.forEach(item => {
       if (map[item.product]) {
@@ -364,8 +366,8 @@ function mergeCounts(data: IFormattedOutputData[][]) {
   });
 }
 
-function splitByCount(data: IFormattedOutputData[][]) {
-  const result: IFormattedOutputData[][] = [];
+function splitByCount(data: IFormattedOutboundData[][]) {
+  const result: IFormattedOutboundData[][] = [];
   data.forEach(items => {
     const count = Math.ceil(items.length / 7);
     for (let i = 0; i < count; i++) {

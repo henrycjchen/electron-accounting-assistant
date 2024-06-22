@@ -3,7 +3,7 @@
     type="primary"
     @click="handleClick"
   >
-    生成（出库凭证/入库凭证）
+    生成
   </a-button>
 </template>
 

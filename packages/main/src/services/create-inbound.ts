@@ -1,35 +1,42 @@
 import ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
-import path from 'path';
 import XLSX from 'xlsx';
-import type {IFormattedOutputData, IFormattedInputData} from '../types';
+import type {IFormattedOutboundData, IFormattedInboundData} from '../types';
 import {setWrapBorder} from '../helpers/excel-helper';
-export function createInputs({
+import {randomRange} from '../helpers/random';
+
+/**
+ * 入库凭证
+ */
+export function createInbound({
   filePath,
-  outputs,
+  outbound,
+  dirname,
 }: {
   filePath: string;
-  outputs: IFormattedOutputData[][];
+  outbound: IFormattedOutboundData[][];
+  dirname: string;
 }) {
   const workbook = XLSX.readFile(filePath);
-  const sheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[sheetName];
+  const worksheet = workbook.Sheets['销售成本'];
 
   // 获取所有单元格数据
   const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
   const {validData} = washData(data as string[][]);
-  const validDataFormatted = formatData(validData, outputs);
+
+  const mergedOutbound = mergeByProduct(mergeByDate(outbound));
+  const validDataFormatted = formatData(validData, mergedOutbound);
 
   action({
     validData: validDataFormatted,
-    filePath: path.dirname(filePath) + `/入库凭证${dayjs().format('YYYYMMDD-HHmmss')}.xlsx`,
+    filePath: dirname + '/入库凭证.xlsx',
   });
 
-  //   return validDataFormatted;
+  return validDataFormatted;
 }
 
-function action({validData, filePath}: {validData: IFormattedInputData[][]; filePath: string}) {
+function action({validData, filePath}: {validData: IFormattedInboundData[][]; filePath: string}) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('入库凭证', {
     properties: {
@@ -157,13 +164,16 @@ function washData(data: string[][]) {
   if (!countTarget || !productTarget) throw new Error('未找到目标');
   const slimData = data
     .slice(countTarget[0] + 2)
-    .filter(item => item && item.length && !/合\s*计/.test(item[productTarget[1]]))
+    .filter(
+      item =>
+        item && item.length && item[productTarget[1]] && !/合\s*计/.test(item[productTarget[1]]),
+    )
     .map(item => ({
-      product: item[productTarget[1]]?.trim().split(/[(（]/)[0]?.trim(),
-      unit: item[productTarget[1]]?.trim().split(/[(（]/)[1]?.trim(),
+      product: item[productTarget[1]]?.trim().split(/[(（]/)[0]?.trim() || '',
+      unit: item[productTarget[1]]?.trim().split(/[(（]/)[1]?.trim() || '',
       count: Number(item[countTarget[1]]) || 0,
     }))
-    .filter(item => item.count) as IFormattedOutputData[];
+    .filter(item => item.count) as IFormattedOutboundData[];
 
   return {validData: slimData};
 }
@@ -182,41 +192,72 @@ function findTarget(data: string[][], target: string) {
   }
 }
 
+function mergeByDate(data: IFormattedOutboundData[][]) {
+  const result: Record<string, IFormattedOutboundData[]> = {};
+  data.forEach(items => {
+    items.forEach(item => {
+      if (result[item.date]) {
+        result[item.date].push(item);
+      } else {
+        result[item.date] = [item];
+      }
+    });
+  });
+  return Object.values(result);
+}
+
+function mergeByProduct(data: IFormattedOutboundData[][]) {
+  const result: IFormattedOutboundData[][] = [];
+  data.forEach(items => {
+    const map: Record<string, IFormattedOutboundData> = items.reduce((map, item) => {
+      if (map[item.product]) {
+        map[item.product].count += item.count;
+      } else {
+        map[item.product] = item;
+      }
+      return map;
+    }, {} as Record<string, IFormattedOutboundData>);
+    result.push(Object.values(map));
+  });
+  return result;
+}
+
 function formatData(
-  slimData: IFormattedInputData[],
-  outputs: IFormattedOutputData[][],
-): IFormattedInputData[][] {
-  const outputSplitted = splitByOutput(slimData, outputs);
-  const countSplitted = splitByCount(outputSplitted);
+  slimData: IFormattedInboundData[],
+  outbound: IFormattedOutboundData[][],
+): IFormattedInboundData[][] {
+  const outboundTimeSplitted = splitByOutboundTime(slimData, outbound);
+  const countSplitted = splitByCount(outboundTimeSplitted);
 
   return countSplitted;
 }
 
-function splitByOutput(
-  slimData: IFormattedInputData[],
-  outputs: IFormattedOutputData[][],
-): IFormattedInputData[][] {
+function splitByOutboundTime(
+  slimData: IFormattedInboundData[],
+  outbound: IFormattedOutboundData[][],
+): IFormattedInboundData[][] {
   const result = [];
-  const inputCount = Math.min(outputs.length, randomRange(6, 11));
-  const inputMap: Record<string, IFormattedInputData> = slimData.reduce((map, item) => {
-    if (map[item.product]) {
-      map[item.product].count += item.count;
-    } else {
-      map[item.product] = item;
-    }
+  const inboundCount = Math.min(outbound.length, randomRange(6, 11));
+  const inboundMap: Record<string, IFormattedInboundData> = slimData.reduce((map, item) => {
+    map[item.product] = item;
     return map;
-  }, {} as Record<string, IFormattedInputData>);
+  }, {} as Record<string, IFormattedInboundData>);
 
-  let preUnix = dayjs.unix(outputs[0][0].date).endOf('day').add(-4, 'day').unix();
-  for (let i = 0; i < inputCount; i++) {
+  let preUnix = dayjs.unix(outbound[0][0].date).endOf('day').date(14).unix();
+  for (let i = 0; i < inboundCount; i++) {
     preUnix = dayjs.unix(preUnix).endOf('day').unix();
-    preUnix = Math.min(
-      randomRange(preUnix, dayjs.unix(preUnix).add(2, 'day').unix()),
-      dayjs.unix(outputs[i][0].date).endOf('day').add(-1, 'day').unix(),
-    );
+    preUnix = dayjs
+      .unix(
+        Math.min(
+          randomRange(preUnix, dayjs.unix(preUnix).add(2, 'day').unix()),
+          dayjs.unix(outbound[i][0].date).add(-1, 'day').unix(),
+        ),
+      )
+      .startOf('day')
+      .unix();
 
-    if (i === inputCount - 1) {
-      const input = Object.values(inputMap)
+    if (i === inboundCount - 1) {
+      const inbound = Object.values(inboundMap)
         .filter(item => item.count)
         .map(item => ({
           date: preUnix,
@@ -224,24 +265,24 @@ function splitByOutput(
           unit: item.unit,
           count: item.count,
         }));
-      result.push(input);
+      result.push(inbound);
     } else {
-      const input = outputs[i]
+      const inbound = outbound[i]
         .map(item => {
           let productCount = 0;
-          if (!inputMap[item.product] || !inputMap[item.product].count) return;
-          if (inputMap[item.product].count <= item.count) {
-            productCount = inputMap[item.product].count;
+          if (!inboundMap[item.product] || !inboundMap[item.product].count) return;
+          if (inboundMap[item.product].count <= item.count) {
+            productCount = inboundMap[item.product].count;
           } else {
             productCount = Math.min(
               randomRange(
-                Math.max(item.count * 2, (inputMap[item.product].count / (inputCount - i)) * 2),
-                Math.max(item.count * 3, (inputMap[item.product].count / (inputCount - i)) * 3),
+                Math.max(item.count * 2, (inboundMap[item.product].count / (inboundCount - i)) * 2),
+                Math.max(item.count * 3, (inboundMap[item.product].count / (inboundCount - i)) * 3),
               ),
-              inputMap[item.product].count,
+              inboundMap[item.product].count,
             );
           }
-          inputMap[item.product].count -= productCount;
+          inboundMap[item.product].count -= productCount;
           return {
             date: preUnix,
             product: item.product,
@@ -249,22 +290,22 @@ function splitByOutput(
             count: productCount,
           };
         })
-        .filter(Boolean) as IFormattedInputData[];
-      const leftCount = randomRange((7 - input.length) * 0.7, 7 - input.length + 1);
+        .filter(Boolean) as IFormattedInboundData[];
+      const leftCount = randomRange((7 - (inbound.length % 7)) * 0.7, 7 - (inbound.length % 7) + 1);
       if (leftCount) {
-        const outputProducts = outputs[i].map(item => item.product);
-        const difference = Object.values(inputMap)
-          .filter(x => x.count && !outputProducts.includes(x.product))
+        const outboundProducts = outbound[i].map(item => item.product);
+        const difference = Object.values(inboundMap)
+          .filter(x => x.count && !outboundProducts.includes(x.product))
           .map(x => x.product);
         const randomProducts = randomPick(difference, leftCount);
         for (let i = 0; i < randomProducts.length; i++) {
-          const randomProduct = inputMap[randomProducts[i]];
-          const productCount = Math.max(randomProduct.count / (inputCount - i), 1);
+          const randomProduct = inboundMap[randomProducts[i]];
+          const productCount = Math.max(randomProduct.count / (inboundCount - i), 1);
           const randomCount = Math.min(
             randomRange(productCount * 2, productCount * 3),
             randomProduct.count,
           );
-          input.push({
+          inbound.push({
             date: preUnix,
             product: randomProduct.product,
             unit: randomProduct.unit,
@@ -273,15 +314,15 @@ function splitByOutput(
           randomProduct.count -= randomCount;
         }
       }
-      result.push(input);
+      result.push(inbound);
     }
   }
 
   return result;
 }
 
-function splitByCount(data: IFormattedInputData[][]) {
-  const result: IFormattedInputData[][] = [];
+function splitByCount(data: IFormattedInboundData[][]) {
+  const result: IFormattedInboundData[][] = [];
   data.forEach(items => {
     const count = Math.ceil(items.length / 7);
     for (let i = 0; i < count; i++) {
@@ -289,10 +330,6 @@ function splitByCount(data: IFormattedInputData[][]) {
     }
   });
   return result;
-}
-
-function randomRange(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min) + min);
 }
 
 function randomPick(arr: string[], count: number) {
