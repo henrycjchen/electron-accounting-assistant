@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
 import type {IFormattedIssuingData, IFormattedReceivingData} from '../types';
@@ -13,15 +13,15 @@ const invalidProductType = ['劳务'];
 export function createReceiving({
   filePath,
   issuing,
-  dirname,
+  workbook,
 }: {
   filePath: string;
   issuing: IFormattedIssuingData[][];
-  dirname:string;
+  workbook: ExcelJS.Workbook;
 }) {
-  const workbook = XLSX.readFile(filePath);
-  const sheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[sheetName];
+  const source = XLSX.readFile(filePath);
+  const sheetName = source.SheetNames[0];
+  const worksheet = source.Sheets[sheetName];
 
   // 获取所有单元格数据
   const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
@@ -32,14 +32,13 @@ export function createReceiving({
 
   action({
     validData: validDataFormatted,
-    filePath: dirname + '/收料单.xlsx',
+    workbook,
   });
 
   return validDataFormatted;
 }
 
-function action({validData, filePath}: {validData: IFormattedReceivingData[][]; filePath: string}) {
-  const workbook = new ExcelJS.Workbook();
+function action({validData, workbook}: {validData: IFormattedReceivingData[][]; workbook: ExcelJS.Workbook}) {
   const worksheet = workbook.addWorksheet('收料单', {
     properties: {
       defaultRowHeight: 16,
@@ -151,8 +150,6 @@ function action({validData, filePath}: {validData: IFormattedReceivingData[][]; 
   worksheet.getColumn('K').width = 4.33;
   worksheet.getColumn('L').width = 20;
   row = 1;
-
-  return workbook.xlsx.writeFile(filePath);
 }
 
 function washData(data: string[][]) {

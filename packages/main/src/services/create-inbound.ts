@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
 import type {IFormattedOutboundData, IFormattedInboundData} from '../types';
@@ -11,14 +11,14 @@ import {randomRange} from '../helpers/random';
 export function createInbound({
   filePath,
   outbound,
-  dirname,
+  workbook,
 }: {
   filePath: string;
   outbound: IFormattedOutboundData[][];
-  dirname: string;
+  workbook: ExcelJS.Workbook;
 }) {
-  const workbook = XLSX.readFile(filePath);
-  const worksheet = workbook.Sheets['销售成本'];
+  const source = XLSX.readFile(filePath);
+  const worksheet = source.Sheets['销售成本'];
 
   // 获取所有单元格数据
   const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
@@ -30,14 +30,13 @@ export function createInbound({
 
   action({
     validData: validDataFormatted,
-    filePath: dirname + '/入库凭证.xlsx',
+    workbook,
   });
 
   return validDataFormatted;
 }
 
-function action({validData, filePath}: {validData: IFormattedInboundData[][]; filePath: string}) {
-  const workbook = new ExcelJS.Workbook();
+function action({validData, workbook}: {validData: IFormattedInboundData[][]; workbook: ExcelJS.Workbook}) {
   const worksheet = workbook.addWorksheet('入库凭证', {
     properties: {
       defaultRowHeight: 16,
@@ -153,8 +152,6 @@ function action({validData, filePath}: {validData: IFormattedInboundData[][]; fi
   worksheet.getColumn('K').width = 4.33;
   worksheet.getColumn('L').width = 20;
   row = 1;
-
-  return workbook.xlsx.writeFile(filePath);
 }
 
 function washData(data: string[][]) {

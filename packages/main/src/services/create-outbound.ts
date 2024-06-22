@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
 import type {IFormattedOutboundData} from '../types';
@@ -9,10 +9,10 @@ const invalidProductType = ['机动车', '劳务'];
 /**
  * 出库凭证
  */
-export function createOutbound({filePath, dirname}:{filePath: string; dirname: string}) {
-  const workbook = XLSX.readFile(filePath);
-  const sheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[sheetName];
+export function createOutbound({workbook, filePath}:{workbook:ExcelJS.Workbook ;filePath: string; }) {
+  const source = XLSX.readFile(filePath);
+  const sheetName = source.SheetNames[0];
+  const worksheet = source.Sheets[sheetName];
 
   // 获取所有单元格数据
   const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
@@ -24,7 +24,7 @@ export function createOutbound({filePath, dirname}:{filePath: string; dirname: s
   action({
     validData: validDataFormatted,
     invalidData: formatData(invalidData),
-    filePath: dirname + '/出库凭证.xlsx',
+    workbook,
   });
 
   return validDataFormatted;
@@ -33,13 +33,12 @@ export function createOutbound({filePath, dirname}:{filePath: string; dirname: s
 function action({
   validData,
   invalidData,
-  filePath,
+  workbook,
 }: {
   validData: IFormattedOutboundData[][];
   invalidData: IFormattedOutboundData[][];
-  filePath: string;
+  workbook: ExcelJS.Workbook;
 }) {
-  const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('出库凭证', {
     properties: {
       defaultRowHeight: 16,
@@ -248,8 +247,6 @@ function action({
       row += 3;
     }
   });
-
-  return workbook.xlsx.writeFile(filePath);
 }
 
 function washData(data: string[][]) {

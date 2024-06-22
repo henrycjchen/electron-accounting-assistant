@@ -1,5 +1,5 @@
 import {ipcMain} from 'electron';
-import {processExcel} from './helpers/process-excel';
+import {processExcel} from './services';
 
 ipcMain.handle('generateOutboundFile', async (event, files: Record<string, string>) => {
   if (!Object.values(files)?.length) {

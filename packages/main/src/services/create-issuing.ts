@@ -1,9 +1,9 @@
-import ExcelJS from 'exceljs';
+import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
 import type {IFormattedInboundData, IFormattedIssuingData} from '../types';
 import {setWrapBorder} from '../helpers/excel-helper';
-import { randomRange } from '../helpers/random';
+import {randomRange} from '../helpers/random';
 
 const intUnit = ['个'];
 
@@ -13,14 +13,14 @@ const intUnit = ['个'];
 export function createIssuing({
   filePath,
   inbound,
-  dirname,
+  workbook,
 }: {
   filePath: string;
   inbound: IFormattedInboundData[][];
-  dirname:string;
+  workbook: ExcelJS.Workbook;
 }) {
-  const workbook = XLSX.readFile(filePath);
-  const worksheet = workbook.Sheets['材料'];
+  const source = XLSX.readFile(filePath);
+  const worksheet = source.Sheets['材料'];
 
   // 获取所有单元格数据
   const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
@@ -31,14 +31,19 @@ export function createIssuing({
 
   action({
     validData: validDataFormatted,
-    filePath: dirname + '/领料单.xlsx',
+    workbook,
   });
 
   return validDataFormatted;
 }
 
-function action({validData, filePath}: {validData: IFormattedInboundData[][]; filePath: string}) {
-  const workbook = new ExcelJS.Workbook();
+function action({
+  validData,
+  workbook,
+}: {
+  validData: IFormattedInboundData[][];
+  workbook: ExcelJS.Workbook;
+}) {
   const worksheet = workbook.addWorksheet('领料单', {
     properties: {
       defaultRowHeight: 16,
@@ -146,8 +151,6 @@ function action({validData, filePath}: {validData: IFormattedInboundData[][]; fi
   worksheet.getColumn('K').width = 4.33;
   worksheet.getColumn('L').width = 20;
   row = 1;
-
-  return workbook.xlsx.writeFile(filePath);
 }
 
 function washData(data: string[][]) {
@@ -249,7 +252,10 @@ function splitByInboundTime(
       const products = Object.values(issuingMap)
         .filter(item => item.count)
         .map(item => item.product);
-      const randomProducts = randomPick(products, randomRange(slimData.length/2, slimData.length+1));
+      const randomProducts = randomPick(
+        products,
+        randomRange(slimData.length / 2, slimData.length + 1),
+      );
       const issuing = randomProducts.map(item => {
         const productCount = Math.min(
           randomRange(
