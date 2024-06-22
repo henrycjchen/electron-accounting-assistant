@@ -63,7 +63,6 @@ const files: Record<string, string> = {};
 const uploadFlag = ref<Record<string, string>>({bills: '', calculate: ''});
 
 const handleChange = (info: UploadChangeParam, type: string) => {
-  console.log('info.file.originFileObj', info.file.originFileObj);
   uploadFlag.value[type] = info.file.originFileObj?.name || '';
   if (uploadFlag.value[type]) {
     addFile({

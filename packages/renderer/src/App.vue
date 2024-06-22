@@ -10,16 +10,22 @@ import UploadFiles from './components/UploadFiles.vue';
 import {generateOutboundFile} from '#preload';
 import {message} from 'ant-design-vue';
 
-let files = {};
+let files: Record<string, string> = {};
 async function handleUploadChange(uploads: Record<string, string>) {
   files = uploads;
 }
 
 async function handleGenerateOutboundFile() {
-  if (!Object.values(files).length) {
-    message.error('请先上传文件');
+  if (!files.bills) {
+    message.error('请先上传全量发票查询导出结果');
     return;
   }
+
+  if (!files.calculate) {
+    message.error('请先上传测算表');
+    return;
+  }
+
   message.loading('生成中');
   await generateOutboundFile(files);
   message.destroy();

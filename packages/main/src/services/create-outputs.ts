@@ -77,7 +77,7 @@ function action({
       vertical: 'middle',
       wrapText: true,
     };
-    worksheet.getCell(`C${row}`).value = items[0].date;
+    worksheet.getCell(`C${row}`).value = dayjs.unix(items[0].date).format('YYYY年MM月DD日');
     worksheet.getCell(`C${row}`).alignment = {
       vertical: 'middle',
     };
@@ -176,7 +176,7 @@ function action({
       vertical: 'middle',
       wrapText: true,
     };
-    worksheet.getCell(`J${row}`).value = items[0].date;
+    worksheet.getCell(`J${row}`).value = dayjs.unix(items[0].date).format('YYYY年MM月DD日');
     worksheet.getCell(`J${row}`).alignment = {
       vertical: 'middle',
     };
@@ -258,7 +258,7 @@ function washData(data: string[][]) {
       code: item[3],
       sellCompany: item[5].trim(),
       buyCompany: item[7].trim(),
-      date: dayjs(item[8].trim()).format('YYYY年MM月DD日'),
+      date: dayjs(item[8].trim()).unix(),
       product:
         item[11]
           .trim()
@@ -325,7 +325,7 @@ function splitByCompany(data: IFormattedOutputData[]) {
 function splitByDate(data: IFormattedOutputData[][]) {
   const dateSortedData = data.map(items =>
     items.sort(
-      (a, b) => dayjs(a.date, 'YYYY年MM月DD日').unix() - dayjs(b.date, 'YYYY年MM月DD日').unix(),
+      (a, b) => a.date - b.date,
     ),
   );
   const result: IFormattedOutputData[][] = [];
@@ -345,7 +345,7 @@ function splitByDate(data: IFormattedOutputData[][]) {
 
 function sortByDate(data: IFormattedOutputData[][]) {
   return data.sort(
-    (a, b) => dayjs(a[0].date, 'YYYY年MM月DD日').unix() - dayjs(b[0].date, 'YYYY年MM月DD日').unix(),
+    (a, b) => a[0].date - b[0].date,
   );
 }
 

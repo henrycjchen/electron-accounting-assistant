@@ -1,11 +1,9 @@
 import ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import path from 'path';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
 import XLSX from 'xlsx';
 import type {IFormattedOutputData, IFormattedInputData} from '../types';
 import {setWrapBorder} from '../helpers/excel-helper';
-dayjs.extend(customParseFormat);
 export function createInputs({
   filePath,
   outputs,
@@ -38,7 +36,7 @@ function action({validData, filePath}: {validData: IFormattedInputData[][]; file
       defaultRowHeight: 16,
     },
     pageSetup: {
-      scale: 9,
+      paperSize: 9,
       horizontalCentered: true,
     },
   });
@@ -72,7 +70,7 @@ function action({validData, filePath}: {validData: IFormattedInputData[][]; file
       vertical: 'middle',
       wrapText: true,
     };
-    worksheet.getCell(`C${row}`).value = items[0].date;
+    worksheet.getCell(`C${row}`).value = dayjs.unix(items[0].date).format('YYYY年MM月DD日');
     worksheet.getCell(`C${row}`).alignment = {
       vertical: 'middle',
     };
@@ -199,7 +197,7 @@ function splitByOutput(
   outputs: IFormattedOutputData[][],
 ): IFormattedInputData[][] {
   const result = [];
-  const inputCount = randomRange(5, 9);
+  const inputCount = Math.min(outputs.length, randomRange(6, 11));
   const inputMap: Record<string, IFormattedInputData> = slimData.reduce((map, item) => {
     if (map[item.product]) {
       map[item.product].count += item.count;
@@ -209,19 +207,19 @@ function splitByOutput(
     return map;
   }, {} as Record<string, IFormattedInputData>);
 
-  let preUnix = dayjs(outputs[0][0].date, 'YYYY年MM月DD日').startOf('month').unix();
+  let preUnix = dayjs.unix(outputs[0][0].date).endOf('day').add(-4, 'day').unix();
   for (let i = 0; i < inputCount; i++) {
+    preUnix = dayjs.unix(preUnix).endOf('day').unix();
     preUnix = Math.min(
-      randomRange(preUnix, dayjs.unix(preUnix).add(4, 'day').unix()),
-      dayjs(outputs[i][0].date, 'YYYY年MM月DD日').startOf('day').unix(),
+      randomRange(preUnix, dayjs.unix(preUnix).add(2, 'day').unix()),
+      dayjs.unix(outputs[i][0].date).endOf('day').add(-1, 'day').unix(),
     );
-    const inputDate = dayjs.unix(preUnix).format('YYYY年MM月DD日');
 
     if (i === inputCount - 1) {
       const input = Object.values(inputMap)
         .filter(item => item.count)
         .map(item => ({
-          date: inputDate,
+          date: preUnix,
           product: item.product,
           unit: item.unit,
           count: item.count,
@@ -236,35 +234,38 @@ function splitByOutput(
             productCount = inputMap[item.product].count;
           } else {
             productCount = Math.min(
-              randomRange(item.count * 1.5, item.count * 2),
+              randomRange(
+                Math.max(item.count * 2, (inputMap[item.product].count / (inputCount - i)) * 2),
+                Math.max(item.count * 3, (inputMap[item.product].count / (inputCount - i)) * 3),
+              ),
               inputMap[item.product].count,
             );
           }
           inputMap[item.product].count -= productCount;
           return {
-            date: inputDate,
+            date: preUnix,
             product: item.product,
             unit: item.unit,
             count: productCount,
           };
         })
         .filter(Boolean) as IFormattedInputData[];
-      const leftCount = randomRange((7 - input.length) * 0.5, 7 - input.length + 1);
+      const leftCount = randomRange((7 - input.length) * 0.7, 7 - input.length + 1);
       if (leftCount) {
         const outputProducts = outputs[i].map(item => item.product);
         const difference = Object.values(inputMap)
           .filter(x => x.count && !outputProducts.includes(x.product))
           .map(x => x.product);
         const randomProducts = randomPick(difference, leftCount);
-        for (let i = 0; i < leftCount; i++) {
+        for (let i = 0; i < randomProducts.length; i++) {
           const randomProduct = inputMap[randomProducts[i]];
-          const productCount = randomProduct.count / (inputCount - i);
+          const productCount = Math.max(randomProduct.count / (inputCount - i), 1);
           const randomCount = Math.min(
-            randomRange(Math.max(productCount * 2, 1), Math.max(productCount * 4, 1)),
+            randomRange(productCount * 2, productCount * 3),
             randomProduct.count,
           );
           input.push({
-            date: inputDate,
+            date: preUnix,
             product: randomProduct.product,
             unit: randomProduct.unit,
             count: randomCount,

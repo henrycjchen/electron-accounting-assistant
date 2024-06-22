@@ -1,7 +1,7 @@
 export interface IFormattedOutputData {
   code: string;
   buyCompany: string;
-  date: string;
+  date: number;
   product: string;
   productType: string;
   unit: string;
@@ -10,7 +10,7 @@ export interface IFormattedOutputData {
 }
 
 export interface IFormattedInputData {
-  date: string;
+  date: number;
   product: string;
   unit: string;
   count: number;
