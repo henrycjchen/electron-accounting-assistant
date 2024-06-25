@@ -253,13 +253,13 @@ function splitByInboundTime(
       const products = Object.values(issuingMap).filter(item => item.count);
       const randomProducts = randomPick<IFormattedIssuingData>(
         products,
-        randomRange(slimData.length / 2, slimData.length + 1),
+        randomRange(Math.max(1, slimData.length / 2), slimData.length + 1),
       );
       const issuing = randomProducts.map(item => {
         const productCount = Math.min(
           randomRange(
             item.count / (issuingCount - i),
-            item.count / (issuingCount - i) * 2,
+            (item.count / (issuingCount - i)) * 2,
             !floatUnits.includes(item.unit),
           ),
           item.count,
