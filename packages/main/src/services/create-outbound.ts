@@ -3,13 +3,18 @@ import dayjs from 'dayjs';
 import XLSX from 'xlsx';
 import type {IFormattedOutboundData} from '../types';
 import {setWrapBorder} from '../helpers/excel-helper';
-
-const invalidProductType = ['机动车', '劳务'];
+import {floatUnits, invalidProductTypes} from '../config';
 
 /**
  * 出库凭证
  */
-export function createOutbound({workbook, filePath}:{workbook:ExcelJS.Workbook ;filePath: string; }) {
+export function createOutbound({
+  workbook,
+  filePath,
+}: {
+  workbook: ExcelJS.Workbook;
+  filePath: string;
+}) {
   const source = XLSX.readFile(filePath);
   const sheetName = source.SheetNames[0];
   const worksheet = source.Sheets[sheetName];
@@ -111,7 +116,9 @@ function action({
       setWrapBorder(worksheet.getCell(`C${row}`));
       worksheet.getCell(`D${row}`).value = product.unit;
       setWrapBorder(worksheet.getCell(`D${row}`));
-      worksheet.getCell(`E${row}`).value = Number(product.count);
+      worksheet.getCell(`E${row}`).value = floatUnits.includes(product.unit)
+        ? Number(product.count.toFixed(3))
+        : Number(product.count);
       setWrapBorder(worksheet.getCell(`E${row}`));
       worksheet.getRow(row).height = 18.75;
     });
@@ -281,7 +288,7 @@ function washData(data: string[][]) {
   const invalidData = [];
   for (const item of slimData) {
     if (
-      invalidProductType.includes(item.productType) ||
+      invalidProductTypes.includes(item.productType) ||
       item.notes.includes('被红冲蓝字') ||
       invalidCodes.includes(item.code)
     ) {
@@ -322,11 +329,7 @@ function mergeByCompany(data: IFormattedOutboundData[]) {
 }
 
 function splitByDate(data: IFormattedOutboundData[][]) {
-  const dateSortedData = data.map(items =>
-    items.sort(
-      (a, b) => a.date - b.date,
-    ),
-  );
+  const dateSortedData = data.map(items => items.sort((a, b) => a.date - b.date));
   const result: IFormattedOutboundData[][] = [];
   dateSortedData.forEach(items => {
     const map: Record<string, IFormattedOutboundData[]> = {};
@@ -343,9 +346,7 @@ function splitByDate(data: IFormattedOutboundData[][]) {
 }
 
 function sortByDate(data: IFormattedOutboundData[][]) {
-  return data.sort(
-    (a, b) => a[0].date - b[0].date,
-  );
+  return data.sort((a, b) => a[0].date - b[0].date);
 }
 
 function mergeCounts(data: IFormattedOutboundData[][]) {
@@ -353,10 +354,10 @@ function mergeCounts(data: IFormattedOutboundData[][]) {
     const map: Record<string, IFormattedOutboundData> = {};
     items.sort((a, b) => a.product.localeCompare(b.product, 'zh-Hans-CN', {sensitivity: 'accent'}));
     items.forEach(item => {
-      if (map[item.product]) {
-        map[item.product].count += item.count;
+      if (map[`${item.product}_${item.unit}`]) {
+        map[`${item.product}_${item.unit}`].count += item.count;
       } else {
-        map[item.product] = item;
+        map[`${item.product}_${item.unit}`] = item;
       }
     });
     return Object.values(map);

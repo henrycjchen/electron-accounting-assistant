@@ -1,7 +1,10 @@
 <template>
   <a-space direction="vertical">
     <UploadFiles @change="handleUploadChange" />
-    <GenerateOutboundFile @generate-outbound-file="handleGenerateOutboundFile" />
+    <GenerateOutboundFile
+      :files="files"
+      @generate-outbound-file="handleGenerateOutboundFile"
+    />
   </a-space>
 </template>
 <script lang="ts" setup>
@@ -9,30 +12,16 @@ import GenerateOutboundFile from './components/GenerateOutboundFile.vue';
 import UploadFiles from './components/UploadFiles.vue';
 import {generateOutboundFile} from '#preload';
 import {message} from 'ant-design-vue';
+import {ref} from 'vue';
 
-let files: Record<string, string> = {};
+let files = ref<Record<string, string>>({});
 async function handleUploadChange(uploads: Record<string, string>) {
-  files = uploads;
+  files.value = uploads;
 }
 
 async function handleGenerateOutboundFile() {
-  if (!files.outboundInvoices) {
-    message.error('请先上传出库发票');
-    return;
-  }
-
-  if (!files.calculate) {
-    message.error('请先上传测算表');
-    return;
-  }
-
-  if (!files.calculate) {
-    message.error('请先上传购进发票');
-    return;
-  }
-
   message.loading('生成中');
-  await generateOutboundFile(files);
+  await generateOutboundFile(JSON.parse(JSON.stringify(files.value)));
   message.destroy();
   message.success('生成完成');
 }
@@ -44,8 +33,10 @@ async function handleGenerateOutboundFile() {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin: 60px auto;
   max-width: 700px;
+}
+body {
+  padding: 60px;
 }
 
 fieldset {

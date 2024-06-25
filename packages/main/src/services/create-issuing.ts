@@ -3,9 +3,8 @@ import dayjs from 'dayjs';
 import XLSX from 'xlsx';
 import type {IFormattedInboundData, IFormattedIssuingData} from '../types';
 import {setWrapBorder} from '../helpers/excel-helper';
-import {randomRange} from '../helpers/random';
-
-const intUnit = ['个'];
+import {randomPick, randomRange} from '../helpers/random';
+import {floatUnits} from '../config';
 
 /**
  * 领料单
@@ -111,7 +110,9 @@ function action({
       setWrapBorder(worksheet.getCell(`A${row}`));
       worksheet.getCell(`B${row}`).value = product.unit;
       setWrapBorder(worksheet.getCell(`B${row}`));
-      worksheet.getCell(`C${row}`).value = product.count.toFixed(3);
+      worksheet.getCell(`C${row}`).value = floatUnits.includes(product.unit)
+        ? Number(product.count.toFixed(3))
+        : Number(product.count);
       setWrapBorder(worksheet.getCell(`C${row}`));
       worksheet.getCell(`D${row}`).value = '';
       setWrapBorder(worksheet.getCell(`D${row}`));
@@ -221,7 +222,7 @@ function splitByInboundTime(
   const result = [];
   const issuingCount = Math.min(inbound.length, randomRange(5, 8));
   const issuingMap: Record<string, IFormattedIssuingData> = slimData.reduce((map, item) => {
-    map[item.product] = item;
+    map[`${item.product}_${item.unit}`] = item;
     return map;
   }, {} as Record<string, IFormattedIssuingData>);
 
@@ -249,27 +250,25 @@ function splitByInboundTime(
         }));
       result.push(issuing);
     } else {
-      const products = Object.values(issuingMap)
-        .filter(item => item.count)
-        .map(item => item.product);
-      const randomProducts = randomPick(
+      const products = Object.values(issuingMap).filter(item => item.count);
+      const randomProducts = randomPick<IFormattedIssuingData>(
         products,
         randomRange(slimData.length / 2, slimData.length + 1),
       );
       const issuing = randomProducts.map(item => {
         const productCount = Math.min(
           randomRange(
-            Math.max((issuingMap[item].count / (issuingCount - i)) * 2),
-            Math.max((issuingMap[item].count / (issuingCount - i)) * 3),
-            intUnit.includes(issuingMap[item].unit),
+            item.count / (issuingCount - i),
+            item.count / (issuingCount - i) * 2,
+            !floatUnits.includes(item.unit),
           ),
-          issuingMap[item].count,
+          item.count,
         );
-        issuingMap[item].count -= productCount;
+        item.count -= productCount;
         return {
           date: preUnix,
-          product: item,
-          unit: issuingMap[item].unit,
+          product: item.product,
+          unit: item.unit,
           count: productCount,
         };
       });
@@ -288,18 +287,5 @@ function splitByCount(data: IFormattedInboundData[][]) {
       result.push(items.slice(i * 7, (i + 1) * 7));
     }
   });
-  return result;
-}
-
-function randomPick(arr: string[], count: number) {
-  const result = [];
-  for (let i = 0; i < count; i++) {
-    if (arr.length === 0) {
-      break;
-    }
-    const index = Math.floor(Math.random() * arr.length);
-    const [item] = arr.splice(index, 1);
-    result.push(item);
-  }
   return result;
 }

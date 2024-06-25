@@ -4,8 +4,7 @@ import XLSX from 'xlsx';
 import type {IFormattedIssuingData, IFormattedReceivingData} from '../types';
 import {setWrapBorder} from '../helpers/excel-helper';
 import {randomRange} from '../helpers/random';
-
-const invalidProductType = ['劳务'];
+import {floatUnits, invalidProductTypes} from '../config';
 
 /**
  * 收料单
@@ -38,7 +37,13 @@ export function createReceiving({
   return validDataFormatted;
 }
 
-function action({validData, workbook}: {validData: IFormattedReceivingData[][]; workbook: ExcelJS.Workbook}) {
+function action({
+  validData,
+  workbook,
+}: {
+  validData: IFormattedReceivingData[][];
+  workbook: ExcelJS.Workbook;
+}) {
   const worksheet = workbook.addWorksheet('收料单', {
     properties: {
       defaultRowHeight: 16,
@@ -82,8 +87,7 @@ function action({validData, workbook}: {validData: IFormattedReceivingData[][]; 
 
     row += 1;
     worksheet.mergeCells(`A${row}:E${row}`);
-    worksheet.getCell(`A${row}`).value =
-      `供应者：${items[0].sellCompany}`;
+    worksheet.getCell(`A${row}`).value = `供应者：${items[0].sellCompany}`;
     setWrapBorder(worksheet.getCell(`A${row}`));
     worksheet.getCell(`A${row}`).alignment = {
       vertical: 'middle',
@@ -110,7 +114,9 @@ function action({validData, workbook}: {validData: IFormattedReceivingData[][]; 
       setWrapBorder(worksheet.getCell(`A${row}`));
       worksheet.getCell(`B${row}`).value = product.specification;
       setWrapBorder(worksheet.getCell(`B${row}`));
-      worksheet.getCell(`C${row}`).value = product.count.toFixed(3);
+      worksheet.getCell(`C${row}`).value = floatUnits.includes(product.unit)
+        ? Number(product.count.toFixed(3))
+        : Number(product.count);
       setWrapBorder(worksheet.getCell(`C${row}`));
       worksheet.getCell(`D${row}`).value = product.unit;
       setWrapBorder(worksheet.getCell(`D${row}`));
@@ -165,7 +171,7 @@ function washData(data: string[][]) {
       date: dayjs(item[8]).startOf('day').unix(),
       count: Number(item[14]) || 0,
     }))
-    .filter(item => !invalidProductType.includes(item.productType))
+    .filter(item => !invalidProductTypes.includes(item.productType))
     .sort((a, b) => a.date - b.date) as IFormattedReceivingData[];
 
   return {validData: slimData};
@@ -179,7 +185,7 @@ function formatData(
   const dateSplitted = splitByDate(companySplitted);
   const countMerged = mergeCounts(dateSplitted);
   const countSplitted = splitByCount(countMerged);
-  
+
   const dateRewritten = rewriteDate(countSplitted, issuing);
   const dateSorted = sortByDate(dateRewritten);
 
@@ -224,10 +230,10 @@ function mergeCounts(data: IFormattedReceivingData[][]) {
     const map: Record<string, IFormattedReceivingData> = {};
     items.sort((a, b) => a.product.localeCompare(b.product, 'zh-Hans-CN', {sensitivity: 'accent'}));
     items.forEach(item => {
-      if (map[item.product]) {
-        map[item.product].count += item.count;
+      if (map[`${item.product}_${item.unit}`]) {
+        map[`${item.product}_${item.unit}`].count += item.count;
       } else {
-        map[item.product] = item;
+        map[`${item.product}_${item.unit}`] = item;
       }
     });
     return Object.values(map);

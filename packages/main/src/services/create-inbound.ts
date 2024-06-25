@@ -3,7 +3,8 @@ import dayjs from 'dayjs';
 import XLSX from 'xlsx';
 import type {IFormattedOutboundData, IFormattedInboundData} from '../types';
 import {setWrapBorder} from '../helpers/excel-helper';
-import {randomRange} from '../helpers/random';
+import {randomPick, randomRange} from '../helpers/random';
+import {floatUnits} from '../config';
 
 /**
  * 入库凭证
@@ -25,8 +26,7 @@ export function createInbound({
 
   const {validData} = washData(data as string[][]);
 
-  const mergedOutbound = mergeByProduct(mergeByDate(outbound));
-  const validDataFormatted = formatData(validData, mergedOutbound);
+  const validDataFormatted = formatData(validData, outbound);
 
   action({
     validData: validDataFormatted,
@@ -36,7 +36,13 @@ export function createInbound({
   return validDataFormatted;
 }
 
-function action({validData, workbook}: {validData: IFormattedInboundData[][]; workbook: ExcelJS.Workbook}) {
+function action({
+  validData,
+  workbook,
+}: {
+  validData: IFormattedInboundData[][];
+  workbook: ExcelJS.Workbook;
+}) {
   const worksheet = workbook.addWorksheet('入库凭证', {
     properties: {
       defaultRowHeight: 16,
@@ -109,7 +115,9 @@ function action({validData, workbook}: {validData: IFormattedInboundData[][]; wo
       setWrapBorder(worksheet.getCell(`C${row}`));
       worksheet.getCell(`D${row}`).value = product.unit;
       setWrapBorder(worksheet.getCell(`D${row}`));
-      worksheet.getCell(`E${row}`).value = Number(product.count);
+      worksheet.getCell(`E${row}`).value = floatUnits.includes(product.unit)
+        ? Number(product.count.toFixed(3))
+        : Number(product.count);
       setWrapBorder(worksheet.getCell(`E${row}`));
       worksheet.getRow(row).height = 18.75;
     });
@@ -207,10 +215,10 @@ function mergeByProduct(data: IFormattedOutboundData[][]) {
   const result: IFormattedOutboundData[][] = [];
   data.forEach(items => {
     const map: Record<string, IFormattedOutboundData> = items.reduce((map, item) => {
-      if (map[item.product]) {
-        map[item.product].count += item.count;
+      if (map[`${item.product}_${item.unit}`]) {
+        map[`${item.product}_${item.unit}`].count += item.count;
       } else {
-        map[item.product] = item;
+        map[`${item.product}_${item.unit}`] = item;
       }
       return map;
     }, {} as Record<string, IFormattedOutboundData>);
@@ -223,7 +231,9 @@ function formatData(
   slimData: IFormattedInboundData[],
   outbound: IFormattedOutboundData[][],
 ): IFormattedInboundData[][] {
-  const outboundTimeSplitted = splitByOutboundTime(slimData, outbound);
+  const mergedOutbound = mergeByProduct(mergeByDate(outbound));
+
+  const outboundTimeSplitted = splitByOutboundTime(slimData, mergedOutbound);
   const countSplitted = splitByCount(outboundTimeSplitted);
 
   return countSplitted;
@@ -236,7 +246,7 @@ function splitByOutboundTime(
   const result = [];
   const inboundCount = Math.min(outbound.length, randomRange(6, 11));
   const inboundMap: Record<string, IFormattedInboundData> = slimData.reduce((map, item) => {
-    map[item.product] = item;
+    map[`${item.product}_${item.unit}`] = item;
     return map;
   }, {} as Record<string, IFormattedInboundData>);
 
@@ -267,19 +277,30 @@ function splitByOutboundTime(
       const inbound = outbound[i]
         .map(item => {
           let productCount = 0;
-          if (!inboundMap[item.product] || !inboundMap[item.product].count) return;
-          if (inboundMap[item.product].count <= item.count) {
-            productCount = inboundMap[item.product].count;
+          if (
+            !inboundMap[`${item.product}_${item.unit}`] ||
+            !inboundMap[`${item.product}_${item.unit}`].count
+          )
+            return;
+          if (inboundMap[`${item.product}_${item.unit}`].count <= item.count) {
+            productCount = inboundMap[`${item.product}_${item.unit}`].count;
           } else {
             productCount = Math.min(
               randomRange(
-                Math.max(item.count * 2, (inboundMap[item.product].count / (inboundCount - i)) * 2),
-                Math.max(item.count * 3, (inboundMap[item.product].count / (inboundCount - i)) * 3),
+                Math.max(
+                  item.count,
+                  (inboundMap[`${item.product}_${item.unit}`].count / (inboundCount - i)),
+                ),
+                Math.max(
+                  item.count * 2,
+                  (inboundMap[`${item.product}_${item.unit}`].count / (inboundCount - i)) * 2,
+                ),
+                !floatUnits.includes(item.unit),
               ),
-              inboundMap[item.product].count,
+              inboundMap[`${item.product}_${item.unit}`].count,
             );
           }
-          inboundMap[item.product].count -= productCount;
+          inboundMap[`${item.product}_${item.unit}`].count -= productCount;
           return {
             date: preUnix,
             product: item.product,
@@ -291,15 +312,19 @@ function splitByOutboundTime(
       const leftCount = randomRange((7 - (inbound.length % 7)) * 0.7, 7 - (inbound.length % 7) + 1);
       if (leftCount) {
         const outboundProducts = outbound[i].map(item => item.product);
-        const difference = Object.values(inboundMap)
-          .filter(x => x.count && !outboundProducts.includes(x.product))
-          .map(x => x.product);
-        const randomProducts = randomPick(difference, leftCount);
+        const difference = Object.values(inboundMap).filter(
+          x => x.count && !outboundProducts.includes(x.product),
+        );
+        const randomProducts = randomPick<IFormattedInboundData>(difference, leftCount);
         for (let i = 0; i < randomProducts.length; i++) {
-          const randomProduct = inboundMap[randomProducts[i]];
+          const randomProduct = randomProducts[i];
           const productCount = Math.max(randomProduct.count / (inboundCount - i), 1);
           const randomCount = Math.min(
-            randomRange(productCount * 2, productCount * 3),
+            randomRange(
+              productCount,
+              productCount * 2,
+              !floatUnits.includes(randomProduct.unit),
+            ),
             randomProduct.count,
           );
           inbound.push({
@@ -326,18 +351,5 @@ function splitByCount(data: IFormattedInboundData[][]) {
       result.push(items.slice(i * 7, (i + 1) * 7));
     }
   });
-  return result;
-}
-
-function randomPick(arr: string[], count: number) {
-  const result = [];
-  for (let i = 0; i < count; i++) {
-    if (arr.length === 0) {
-      break;
-    }
-    const index = Math.floor(Math.random() * arr.length);
-    const [item] = arr.splice(index, 1);
-    result.push(item);
-  }
   return result;
 }

@@ -8,29 +8,35 @@ import ExcelJS from 'exceljs';
 
 
 export async function processExcel(files: Record<string, string>) {
-  const workbook = new ExcelJS.Workbook();
+  if (files.outboundInvoices) {
+    const workbook = new ExcelJS.Workbook();
+    let dist = path.dirname(files.outboundInvoices) + '/会计助手-' + dayjs().format('YYYYMM')+'.xlsx';
+    const outbound = await createOutbound({filePath: files.outboundInvoices, workbook});
+    
+    if (files.calculate) {
+      dist = path.dirname(files.calculate) + '/会计助手-' + dayjs().format('YYYYMM')+'.xlsx';
+      const inbound = await createInbound({
+        filePath: files.calculate,
+        outbound,
+        workbook,
+      });
+    
+      const issuing = await createIssuing({
+        filePath: files.calculate,
+        inbound,
+        workbook,
+      });
+  
+      if (files.receivingInvoices) {
+        await createReceiving({
+          filePath: files.receivingInvoices,
+          issuing,
+          workbook,
+        });
+      }
+    }
+    return workbook.xlsx.writeFile(dist);
+  }
 
-  const dist = path.dirname(files.calculate) + '/会计助手-' + dayjs().format('YYYYMM')+'.xlsx';
 
-  const outbound = await createOutbound({filePath: files.outboundInvoices, workbook});
-
-  const inbound = await createInbound({
-    filePath: files.calculate,
-    outbound,
-    workbook,
-  });
-
-  const issuing = await createIssuing({
-    filePath: files.calculate,
-    inbound,
-    workbook,
-  });
-
-  await createReceiving({
-    filePath: files.receivingInvoices,
-    issuing,
-    workbook,
-  });
-
-  return workbook.xlsx.writeFile(dist);
 }

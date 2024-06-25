@@ -5,6 +5,8 @@ import {fileURLToPath} from 'node:url';
 async function createWindow() {
   const browserWindow = new BrowserWindow({
     show: false, // Use the 'ready-to-show' event to show the instantiated BrowserWindow.
+    width: 500,
+    height: 360,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
