@@ -16,7 +16,7 @@ import {ref} from 'vue';
 
 let files = ref<Record<string, string>>({});
 async function handleUploadChange(uploads: Record<string, string>) {
-  files.value = uploads;
+  files.value = JSON.parse(JSON.stringify(uploads));
 }
 
 async function handleGenerateOutboundFile() {
