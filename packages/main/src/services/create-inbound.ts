@@ -244,7 +244,7 @@ function splitByOutboundTime(
   outbound: IFormattedOutboundData[][],
 ): IFormattedInboundData[][] {
   const result = [];
-  const inboundCount = Math.min(outbound.length, randomRange(6, 11));
+  const inboundCount = randomRange(5, 10);
   const inboundMap: Record<string, IFormattedInboundData> = slimData.reduce((map, item) => {
     map[`${item.product}_${item.unit}`] = item;
     return map;
@@ -252,12 +252,13 @@ function splitByOutboundTime(
 
   let preUnix = dayjs.unix(outbound[0][0].date).endOf('day').date(14).unix();
   for (let i = 0; i < inboundCount; i++) {
+    const outboundItems = outbound[Math.min(i, outbound.length - 1)];
     preUnix = dayjs.unix(preUnix).endOf('day').unix();
     preUnix = dayjs
       .unix(
         Math.min(
           randomRange(preUnix, dayjs.unix(preUnix).add(2, 'day').unix()),
-          dayjs.unix(outbound[i][0].date).add(-1, 'day').unix(),
+          dayjs.unix(outboundItems[0].date).add(-1, 'day').unix(),
         ),
       )
       .startOf('day')
@@ -274,27 +275,29 @@ function splitByOutboundTime(
         }));
       result.push(inbound);
     } else {
-      const inbound = outbound[i]
+      const inbound = outboundItems
         .map(item => {
+          if (inboundCount > outbound.length && Math.random() < 0.5) return;
+
           let productCount = 0;
           if (
             !inboundMap[`${item.product}_${item.unit}`] ||
             !inboundMap[`${item.product}_${item.unit}`].count
           )
             return;
-          if (inboundMap[`${item.product}_${item.unit}`].count <= item.count) {
+          if (inboundMap[`${item.product}_${item.unit}`].count <= item.count && inboundCount <= outbound.length) {
             productCount = inboundMap[`${item.product}_${item.unit}`].count;
           } else {
             productCount = Math.min(
               randomRange(
                 Math.max(
                   item.count,
-                  (inboundMap[`${item.product}_${item.unit}`].count / (inboundCount - i)),
-                ),
+                  inboundMap[`${item.product}_${item.unit}`].count / (inboundCount - i),
+                ) * 0.5,
                 Math.max(
-                  item.count * 2,
-                  (inboundMap[`${item.product}_${item.unit}`].count / (inboundCount - i)) * 2,
-                ),
+                  item.count,
+                  inboundMap[`${item.product}_${item.unit}`].count / (inboundCount - i),
+                ) * 1.5,
                 !floatUnits.includes(item.unit),
               ),
               inboundMap[`${item.product}_${item.unit}`].count,
@@ -309,9 +312,9 @@ function splitByOutboundTime(
           };
         })
         .filter(Boolean) as IFormattedInboundData[];
-      const leftCount = randomRange((7 - (inbound.length % 7)) * 0.7, 7 - (inbound.length % 7) + 1);
+      const leftCount = randomRange((7 - (inbound.length % 7)) * 0.7, 7 - (inbound.length % 7));
       if (leftCount) {
-        const outboundProducts = outbound[i].map(item => item.product);
+        const outboundProducts = outboundItems.map(item => item.product);
         const difference = Object.values(inboundMap).filter(
           x => x.count && !outboundProducts.includes(x.product),
         );
@@ -320,11 +323,7 @@ function splitByOutboundTime(
           const randomProduct = randomProducts[i];
           const productCount = Math.max(randomProduct.count / (inboundCount - i), 1);
           const randomCount = Math.min(
-            randomRange(
-              productCount,
-              productCount * 2,
-              !floatUnits.includes(randomProduct.unit),
-            ),
+            randomRange(productCount, productCount * 2, !floatUnits.includes(randomProduct.unit)),
             randomProduct.count,
           );
           inbound.push({

@@ -1,5 +1,5 @@
 export function randomRange(min: number, max: number, floor: boolean = true) {
-  const value = Math.random() * (max - min) + min;
+  const value = Math.random() * (max - min + (floor ? 1 : 0)) + min;
   if (floor) {
     return Math.floor(value);
   }
