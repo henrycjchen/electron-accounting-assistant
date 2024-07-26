@@ -245,6 +245,7 @@ function splitByOutboundTime(
 ): IFormattedInboundData[][] {
   const result = [];
   const inboundCount = randomRange(5, 10);
+  const isTooFew = inboundCount > outbound.length;
   const inboundMap: Record<string, IFormattedInboundData> = slimData.reduce((map, item) => {
     map[`${item.product}_${item.unit}`] = item;
     return map;
@@ -277,7 +278,7 @@ function splitByOutboundTime(
     } else {
       const inbound = outboundItems
         .map(item => {
-          if (inboundCount > outbound.length && Math.random() < 0.5) return;
+          if (isTooFew && Math.random() < 0.5) return;
 
           let productCount = 0;
           if (
@@ -285,7 +286,7 @@ function splitByOutboundTime(
             !inboundMap[`${item.product}_${item.unit}`].count
           )
             return;
-          if (inboundMap[`${item.product}_${item.unit}`].count <= item.count && inboundCount <= outbound.length) {
+          if (inboundMap[`${item.product}_${item.unit}`].count <= item.count && !isTooFew) {
             productCount = inboundMap[`${item.product}_${item.unit}`].count;
           } else {
             productCount = Math.min(
@@ -293,11 +294,11 @@ function splitByOutboundTime(
                 Math.max(
                   item.count,
                   inboundMap[`${item.product}_${item.unit}`].count / (inboundCount - i),
-                ) * 0.5,
+                ) * (isTooFew ? 0.25 : 1),
                 Math.max(
                   item.count,
                   inboundMap[`${item.product}_${item.unit}`].count / (inboundCount - i),
-                ) * 1.5,
+                ) * (isTooFew ? 1.25 : 2),
                 !floatUnits.includes(item.unit),
               ),
               inboundMap[`${item.product}_${item.unit}`].count,
