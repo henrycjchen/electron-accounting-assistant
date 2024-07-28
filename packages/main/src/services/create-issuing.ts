@@ -48,13 +48,16 @@ function action({
       defaultRowHeight: 16,
     },
     pageSetup: {
+      fitToPage: true,
+      fitToHeight: 0,
+      fitToWidth: 1,
       paperSize: 9,
       horizontalCentered: true,
     },
   });
-  worksheet.getColumn('A').width = 24.67;
-  worksheet.getColumn('B').width = 4.33;
-  worksheet.getColumn('C').width = 14;
+  worksheet.getColumn('A').width = 27.63;
+  worksheet.getColumn('B').width = 7.79;
+  worksheet.getColumn('C').width = 17.79;
   worksheet.getColumn('D').width = 13.33;
   worksheet.getColumn('E').width = 13.33;
 

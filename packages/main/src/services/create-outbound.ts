@@ -49,7 +49,10 @@ function action({
       defaultRowHeight: 16,
     },
     pageSetup: {
-      scale: 9,
+      fitToPage: true,
+      fitToHeight: 0,
+      fitToWidth: 1,
+      paperSize: 9,
       horizontalCentered: true,
     },
   });
