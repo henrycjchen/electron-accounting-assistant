@@ -1,10 +1,10 @@
 import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
-import type {IFormattedIssuingData, IFormattedReceivingData} from '../types';
-import {setWrapBorder} from '../helpers/excel-helper';
-import {randomRange} from '../helpers/random';
-import {floatUnits, invalidProductTypes} from '../config';
+import type {IFormattedIssuingData, IFormattedReceivingData} from '../../types';
+import {setWrapBorder} from '../../helpers/excel-helper';
+import {randomRange} from '../../helpers/random';
+import {floatUnits, invalidProductTypes} from '../../config';
 
 /**
  * 收料单

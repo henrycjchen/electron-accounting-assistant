@@ -12,3 +12,12 @@ export function setWrapBorder(cell: ExcelJS.Cell) {
     horizontal: 'center',
   };
 }
+
+export function getStringValue(value: ExcelJS.CellValue) {
+  if (value && typeof value === 'object') {
+    if ('richText' in value) {
+      return value.richText.map(v => v.text).join('');
+    }
+  }
+  return value as string;
+}

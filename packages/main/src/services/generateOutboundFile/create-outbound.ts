@@ -1,9 +1,9 @@
 import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
-import type {IFormattedOutboundData} from '../types';
-import {setWrapBorder} from '../helpers/excel-helper';
-import {floatUnits, invalidProductTypes} from '../config';
+import type {IFormattedOutboundData} from '../../types';
+import {setWrapBorder} from '../../helpers/excel-helper';
+import {floatUnits, invalidProductTypes} from '../../config';
 
 /**
  * 出库凭证

@@ -7,7 +7,7 @@ import path from 'path';
 import ExcelJS from 'exceljs';
 
 
-export async function processExcel(files: Record<string, string>) {
+export async function generateOutboundFile(files: Record<string, string>) {
   if (files.outboundInvoices) {
     const workbook = new ExcelJS.Workbook();
     let dist = path.dirname(files.outboundInvoices) + '/会计助手-' + dayjs().format('YYYYMM')+'.xlsx';

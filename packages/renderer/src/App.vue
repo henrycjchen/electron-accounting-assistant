@@ -1,46 +1,44 @@
 <template>
-  <a-space direction="vertical">
-    <UploadFiles @change="handleUploadChange" />
-    <GenerateOutboundFile
-      :files="files"
-      @generate-outbound-file="handleGenerateOutboundFile"
-    />
-  </a-space>
+  <a-layout class="layout">
+    <a-menu
+      v-model:selectedKeys="selectedKeys"
+      mode="horizontal"
+      :style="{lineHeight: '64px'}"
+    >
+      <a-menu-item key="create-certificates">
+        <RouterLink to="/create-certificates">创建凭证</RouterLink>
+      </a-menu-item>
+      <a-menu-item key="calculate-table">
+        <RouterLink to="/calculate-table">测算表计算</RouterLink>
+      </a-menu-item>
+    </a-menu>
+    <a-layout-content class="site-layout-content">
+      <RouterView />
+    </a-layout-content>
+  </a-layout>
 </template>
 <script lang="ts" setup>
-import GenerateOutboundFile from './components/GenerateOutboundFile.vue';
-import UploadFiles from './components/UploadFiles.vue';
-import {generateOutboundFile} from '#preload';
-import {message} from 'ant-design-vue';
 import {ref} from 'vue';
-
-let files = ref<Record<string, string>>({});
-async function handleUploadChange(uploads: Record<string, string>) {
-  files.value = JSON.parse(JSON.stringify(uploads));
-}
-
-async function handleGenerateOutboundFile() {
-  message.loading('生成中');
-  await generateOutboundFile(JSON.parse(JSON.stringify(files.value)));
-  message.destroy();
-  message.success('生成完成');
-}
+import {useRouter} from 'vue-router';
+const selectedKeys = ref<string[]>(['create-certificates']);
+const router = useRouter();
+router.push('/create-certificates');
 </script>
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  max-width: 700px;
+<style scoped>
+.site-layout-content {
+  min-height: 280px;
+  padding: 24px;
+  background: #fff;
 }
-body {
-  padding: 60px;
+#components-layout-demo-top .logo {
+  float: left;
+  width: 120px;
+  height: 31px;
+  margin: 16px 24px 16px 0;
+  background: rgba(255, 255, 255, 0.3);
 }
-
-fieldset {
-  margin: 2rem;
-  padding: 1rem;
+.ant-row-rtl #components-layout-demo-top .logo {
+  float: right;
+  margin: 16px 0 16px 24px;
 }
 </style>
