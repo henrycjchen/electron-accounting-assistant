@@ -1,7 +1,7 @@
 import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
-import type {IFormattedInboundData, IFormattedIssuingData} from '../../types';
+import type {IFormattedInboundData, IFormattedMaterialData} from '../../types';
 import {setWrapBorder} from '../../helpers/excel-helper';
 import {randomPick, randomRange} from '../../helpers/random';
 import {floatUnits} from '../../config';
@@ -173,7 +173,7 @@ function washData(data: string[][]) {
       unit: item[productTarget[1] + 1]?.trim() || '',
       count: Number(item[countTarget[1]]) || 0,
     }))
-    .filter(item => item.count) as IFormattedIssuingData[];
+    .filter(item => item.count) as IFormattedMaterialData[];
 
   return {validData: slimData};
 }
@@ -207,7 +207,7 @@ function mergeByDate(data: IFormattedInboundData[][]) {
 }
 
 function formatData(
-  slimData: IFormattedIssuingData[],
+  slimData: IFormattedMaterialData[],
   inbound: IFormattedInboundData[][],
 ): IFormattedInboundData[][] {
   const mergedInbound = mergeByDate(inbound);
@@ -219,15 +219,15 @@ function formatData(
 }
 
 function splitByInboundTime(
-  slimData: IFormattedIssuingData[],
+  slimData: IFormattedMaterialData[],
   inbound: IFormattedInboundData[][],
-): IFormattedIssuingData[][] {
+): IFormattedMaterialData[][] {
   const result = [];
   const issuingCount = Math.min(inbound.length, randomRange(5, 8));
-  const issuingMap: Record<string, IFormattedIssuingData> = slimData.reduce((map, item) => {
+  const issuingMap: Record<string, IFormattedMaterialData> = slimData.reduce((map, item) => {
     map[`${item.product}_${item.unit}`] = item;
     return map;
-  }, {} as Record<string, IFormattedIssuingData>);
+  }, {} as Record<string, IFormattedMaterialData>);
 
   let preUnix = dayjs.unix(inbound[0][0].date).endOf('day').date(9).unix();
   for (let i = 0; i < issuingCount; i++) {
@@ -254,7 +254,7 @@ function splitByInboundTime(
       result.push(issuing);
     } else {
       const products = Object.values(issuingMap).filter(item => item.count);
-      const randomProducts = randomPick<IFormattedIssuingData>(
+      const randomProducts = randomPick<IFormattedMaterialData>(
         products,
         randomRange(Math.max(1, slimData.length * 0.5), slimData.length),
       );

@@ -1,4 +1,4 @@
-export interface IFormattedOutboundData {
+export interface IFormattedOutboundInvoicesData {
   code: string;
   buyCompany: string;
   date: number;
@@ -7,6 +7,8 @@ export interface IFormattedOutboundData {
   unit: string;
   count: number;
   notes: string;
+  price: number;
+  tax: number;
 }
 
 export interface IFormattedInboundData {
@@ -16,14 +18,14 @@ export interface IFormattedInboundData {
   count: number;
 }
 
-export interface IFormattedIssuingData {
+export interface IFormattedMaterialData {
   date: number;
   product: string;
   unit: string;
   count: number;
 }
 
-export interface IFormattedReceivingData {
+export interface IFormattedInboundInvoicesData {
   date: number;
   sellCompany: string;
   product: string;
@@ -31,4 +33,6 @@ export interface IFormattedReceivingData {
   unit: string;
   specification: string;
   count: number;
+  price: number;
+  tax: number;
 }

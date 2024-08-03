@@ -30,15 +30,15 @@ const props = defineProps({
 const requireFiles = computed(() => {
   console.log('props.files', props.files);
   const result: string[] = [];
-  // if (!props.files.outboundInvoices) {
-  //   result.push('出库发票');
-  // }
-  // if (!props.files.calculate) {
-  //   result.push('测算表');
-  // }
-  // if (!props.files.receivingInvoices) {
-  //   result.push('购进发票');
-  // }
+  if (!props.files.outboundInvoices) {
+    result.push('出库发票');
+  }
+  if (!props.files.calculate) {
+    result.push('测算表');
+  }
+  if (!props.files.inboundInvoices) {
+    result.push('购进发票');
+  }
   return result;
 });
 

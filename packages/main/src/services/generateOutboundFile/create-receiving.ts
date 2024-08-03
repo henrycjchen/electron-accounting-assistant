@@ -1,10 +1,10 @@
 import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
-import XLSX from 'xlsx';
-import type {IFormattedIssuingData, IFormattedReceivingData} from '../../types';
+import type {IFormattedMaterialData, IFormattedInboundInvoicesData} from '../../types';
 import {setWrapBorder} from '../../helpers/excel-helper';
 import {randomRange} from '../../helpers/random';
-import {floatUnits, invalidProductTypes} from '../../config';
+import {floatUnits} from '../../config';
+import handleInboundData from '../common/handleInboundData';
 
 /**
  * 收料单
@@ -15,17 +15,10 @@ export function createReceiving({
   workbook,
 }: {
   filePath: string;
-  issuing: IFormattedIssuingData[][];
+  issuing: IFormattedMaterialData[][];
   workbook: ExcelJS.Workbook;
 }) {
-  const source = XLSX.readFile(filePath);
-  const sheetName = source.SheetNames[0];
-  const worksheet = source.Sheets[sheetName];
-
-  // 获取所有单元格数据
-  const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-
-  const {validData} = washData(data as string[][]);
+  const {validData} = handleInboundData(filePath);
 
   const validDataFormatted = formatData(validData, issuing);
 
@@ -41,7 +34,7 @@ function action({
   validData,
   workbook,
 }: {
-  validData: IFormattedReceivingData[][];
+  validData: IFormattedInboundInvoicesData[][];
   workbook: ExcelJS.Workbook;
 }) {
   const worksheet = workbook.addWorksheet('收料单', {
@@ -161,29 +154,10 @@ function action({
   row = 1;
 }
 
-function washData(data: string[][]) {
-  const slimData = data
-    .slice(1)
-    .filter(item => item && item.length)
-    .map(item => ({
-      sellCompany: item[5]?.trim() || '',
-      product: item[11]?.trim().split('*')[2] || '',
-      productType: item[11]?.trim().split('*')[1] || '',
-      specification: item[12]?.trim() || '',
-      unit: item[13]?.trim() || '',
-      date: dayjs(item[8]).startOf('day').unix(),
-      count: Number(item[14]) || 0,
-    }))
-    .filter(item => !invalidProductTypes.includes(item.productType))
-    .sort((a, b) => a.date - b.date) as IFormattedReceivingData[];
-
-  return {validData: slimData};
-}
-
 function formatData(
-  slimData: IFormattedReceivingData[],
-  issuing: IFormattedIssuingData[][],
-): IFormattedReceivingData[][] {
+  slimData: IFormattedInboundInvoicesData[],
+  issuing: IFormattedMaterialData[][],
+): IFormattedInboundInvoicesData[][] {
   const companySplitted = mergeByCompany(slimData);
   const dateSplitted = splitByDate(companySplitted);
   const countMerged = mergeCounts(dateSplitted);
@@ -195,8 +169,8 @@ function formatData(
   return dateSorted;
 }
 
-function mergeByCompany(data: IFormattedReceivingData[]) {
-  const map: Record<string, IFormattedReceivingData[]> = {};
+function mergeByCompany(data: IFormattedInboundInvoicesData[]) {
+  const map: Record<string, IFormattedInboundInvoicesData[]> = {};
   data.forEach(item => {
     if (map[item.sellCompany]) {
       map[item.sellCompany].push(item);
@@ -207,11 +181,11 @@ function mergeByCompany(data: IFormattedReceivingData[]) {
   return Object.values(map);
 }
 
-function splitByDate(data: IFormattedReceivingData[][]) {
+function splitByDate(data: IFormattedInboundInvoicesData[][]) {
   const dateSortedData = data.map(items => items.sort((a, b) => a.date - b.date));
-  const result: IFormattedReceivingData[][] = [];
+  const result: IFormattedInboundInvoicesData[][] = [];
   dateSortedData.forEach(items => {
-    const map: Record<string, IFormattedReceivingData[]> = {};
+    const map: Record<string, IFormattedInboundInvoicesData[]> = {};
     items.forEach(item => {
       if (map[item.date]) {
         map[item.date].push(item);
@@ -224,13 +198,13 @@ function splitByDate(data: IFormattedReceivingData[][]) {
   return result;
 }
 
-function sortByDate(data: IFormattedReceivingData[][]) {
+function sortByDate(data: IFormattedInboundInvoicesData[][]) {
   return data.sort((a, b) => a[0].date - b[0].date);
 }
 
-function mergeCounts(data: IFormattedReceivingData[][]) {
+function mergeCounts(data: IFormattedInboundInvoicesData[][]) {
   return data.map(items => {
-    const map: Record<string, IFormattedReceivingData> = {};
+    const map: Record<string, IFormattedInboundInvoicesData> = {};
     items.sort((a, b) => a.product.localeCompare(b.product, 'zh-Hans-CN', {sensitivity: 'accent'}));
     items.forEach(item => {
       if (map[`${item.product}_${item.unit}`]) {
@@ -243,8 +217,8 @@ function mergeCounts(data: IFormattedReceivingData[][]) {
   });
 }
 
-function splitByCount(data: IFormattedReceivingData[][]) {
-  const result: IFormattedReceivingData[][] = [];
+function splitByCount(data: IFormattedInboundInvoicesData[][]) {
+  const result: IFormattedInboundInvoicesData[][] = [];
   data.forEach(items => {
     const count = Math.ceil(items.length / 7);
     for (let i = 0; i < count; i++) {
@@ -254,7 +228,7 @@ function splitByCount(data: IFormattedReceivingData[][]) {
   return result;
 }
 
-function rewriteDate(data: IFormattedReceivingData[][], issuing: IFormattedIssuingData[][]) {
+function rewriteDate(data: IFormattedInboundInvoicesData[][], issuing: IFormattedMaterialData[][]) {
   const start = dayjs.unix(issuing[0][0].date).startOf('month').unix();
   const lastUnix = dayjs.unix(issuing[0][0].date).add(-1, 'day').endOf('day').unix();
 

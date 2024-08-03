@@ -1,7 +1,7 @@
 import type ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
-import type {IFormattedOutboundData, IFormattedInboundData} from '../../types';
+import type {IFormattedOutboundInvoicesData, IFormattedInboundData} from '../../types';
 import {setWrapBorder} from '../../helpers/excel-helper';
 import {randomPick, randomRange} from '../../helpers/random';
 import {floatUnits} from '../../config';
@@ -15,7 +15,7 @@ export function createInbound({
   workbook,
 }: {
   filePath: string;
-  outbound: IFormattedOutboundData[][];
+  outbound: IFormattedOutboundInvoicesData[][];
   workbook: ExcelJS.Workbook;
 }) {
   const source = XLSX.readFile(filePath);
@@ -182,7 +182,7 @@ function washData(data: string[][]) {
       unit: item[productTarget[1]]?.trim().split(/[(（]/)[1]?.trim() || '',
       count: Number(item[countTarget[1]]) || 0,
     }))
-    .filter(item => item.count) as IFormattedOutboundData[];
+    .filter(item => item.count) as IFormattedOutboundInvoicesData[];
 
   return {validData: slimData};
 }
@@ -201,8 +201,8 @@ function findTarget(data: string[][], target: string) {
   }
 }
 
-function mergeByDate(data: IFormattedOutboundData[][]) {
-  const result: Record<string, IFormattedOutboundData[]> = {};
+function mergeByDate(data: IFormattedOutboundInvoicesData[][]) {
+  const result: Record<string, IFormattedOutboundInvoicesData[]> = {};
   data.forEach(items => {
     items.forEach(item => {
       if (result[item.date]) {
@@ -215,17 +215,17 @@ function mergeByDate(data: IFormattedOutboundData[][]) {
   return Object.values(result);
 }
 
-function mergeByProduct(data: IFormattedOutboundData[][]) {
-  const result: IFormattedOutboundData[][] = [];
+function mergeByProduct(data: IFormattedOutboundInvoicesData[][]) {
+  const result: IFormattedOutboundInvoicesData[][] = [];
   data.forEach(items => {
-    const map: Record<string, IFormattedOutboundData> = items.reduce((map, item) => {
+    const map: Record<string, IFormattedOutboundInvoicesData> = items.reduce((map, item) => {
       if (map[`${item.product}_${item.unit}`]) {
         map[`${item.product}_${item.unit}`].count += item.count;
       } else {
         map[`${item.product}_${item.unit}`] = item;
       }
       return map;
-    }, {} as Record<string, IFormattedOutboundData>);
+    }, {} as Record<string, IFormattedOutboundInvoicesData>);
     result.push(Object.values(map));
   });
   return result;
@@ -233,7 +233,7 @@ function mergeByProduct(data: IFormattedOutboundData[][]) {
 
 function formatData(
   slimData: IFormattedInboundData[],
-  outbound: IFormattedOutboundData[][],
+  outbound: IFormattedOutboundInvoicesData[][],
 ): IFormattedInboundData[][] {
   const mergedOutbound = mergeByProduct(mergeByDate(outbound));
 
@@ -245,7 +245,7 @@ function formatData(
 
 function splitByOutboundTime(
   slimData: IFormattedInboundData[],
-  outbound: IFormattedOutboundData[][],
+  outbound: IFormattedOutboundInvoicesData[][],
 ): IFormattedInboundData[][] {
   const result = [];
   const inboundCount = randomRange(5, 10);

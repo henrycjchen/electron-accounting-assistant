@@ -27,9 +27,9 @@ export async function generateOutboundFile(files: Record<string, string>) {
         workbook,
       });
   
-      if (files.receivingInvoices) {
+      if (files.inboundInvoices) {
         await createReceiving({
-          filePath: files.receivingInvoices,
+          filePath: files.inboundInvoices,
           issuing,
           workbook,
         });

@@ -87,7 +87,7 @@
         :show-upload-list="false"
         action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
         accept=".xlsx, .xls"
-        @change="(e: UploadChangeParam) => handleChange(e, 'receivingInvoices')"
+        @change="(e: UploadChangeParam) => handleChange(e, 'inboundInvoices')"
       >
         <a-space
           direction="vertical"
@@ -96,20 +96,20 @@
             padding: '10px',
           }"
         >
-          <template v-if="uploadFlag.receivingInvoices">
+          <template v-if="uploadFlag.inboundInvoices">
             <FileDoneOutlined :style="{fontSize: '30px', color: 'green'}"></FileDoneOutlined>
-            {{ uploadFlag.receivingInvoices }}
+            {{ uploadFlag.inboundInvoices }}
           </template>
           <template v-else>
             <plus-outlined :style="{fontSize: '30px', color: 'gray'}"></plus-outlined>
           </template>
         </a-space>
         <a-button
-          v-if="uploadFlag.receivingInvoices"
+          v-if="uploadFlag.inboundInvoices"
           type="text"
           size="small"
           style="position: absolute; right: 10px; top: 4px"
-          @click.stop="handleRemoveClick('receivingInvoices')"
+          @click.stop="handleRemoveClick('inboundInvoices')"
         >
           <template #icon>
             <CloseOutlined style="color: gray" />
@@ -127,7 +127,7 @@ const emit = defineEmits(['change']);
 const files: Record<string, string> = {};
 const uploadFlag = ref<Record<string, string>>({
   outboundInvoices: '',
-  receivingInvoices: '',
+  inboundInvoices: '',
   calculate: '',
 });
 

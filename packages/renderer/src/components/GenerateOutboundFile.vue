@@ -41,7 +41,7 @@ const outputFiles = computed(() => {
   } else {
     return result;
   }
-  if (props.files.receivingInvoices) {
+  if (props.files.inboundInvoices) {
     result.push('收料单');
   }
   return result;
