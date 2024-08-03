@@ -21,11 +21,15 @@ async function handleUploadChange(uploads: Record<string, string>) {
 
 async function handleGenerateOutboundFile() {
   message.loading('生成中');
-  await generateOutboundFile(JSON.parse(JSON.stringify(files.value)));
+  try {
+    await generateOutboundFile(JSON.parse(JSON.stringify(files.value)));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e: any) {
+    message.error(e.message.match(/Error: ([^:]*)$/)?.[1] ?? e.message);
+    return;
+  }
   message.destroy();
   message.success('生成完成');
 }
 </script>
-<style>
-
-</style>
+<style></style>

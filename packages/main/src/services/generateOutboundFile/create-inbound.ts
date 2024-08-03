@@ -21,6 +21,8 @@ export function createInbound({
   const source = XLSX.readFile(filePath);
   const worksheet = source.Sheets['销售成本'];
 
+  if (!worksheet) throw new Error('未找到销售成本表');
+
   // 获取所有单元格数据
   const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
@@ -170,7 +172,7 @@ function washData(data: string[][]) {
   const countTarget = findTarget(data, '本期生产');
   const productTarget = findTarget(data, '品名');
 
-  if (!countTarget || !productTarget) throw new Error('未找到目标');
+  if (!countTarget || !productTarget) throw new Error('销售成本表未找到[本期生产]或[品名]');
   const slimData = data
     .slice(countTarget[0] + 2)
     .filter(

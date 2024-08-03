@@ -8,7 +8,7 @@
         class="file-uploader"
         :show-upload-list="false"
         action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
-        accept=".xlsx, .xls"
+        accept=".xlsx"
         @change="(e: UploadChangeParam) => handleChange(e, 'outboundInvoices')"
       >
         <a-space
@@ -47,7 +47,7 @@
         class="file-uploader"
         :show-upload-list="false"
         action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
-        accept=".xlsx, .xls"
+        accept=".xlsx"
         @change="(e: UploadChangeParam) => handleChange(e, 'calculate')"
       >
         <a-space
@@ -86,7 +86,7 @@
         class="file-uploader"
         :show-upload-list="false"
         action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
-        accept=".xlsx, .xls"
+        accept=".xlsx"
         @change="(e: UploadChangeParam) => handleChange(e, 'inboundInvoices')"
       >
         <a-space

@@ -21,6 +21,8 @@ export function createIssuing({
   const source = XLSX.readFile(filePath);
   const worksheet = source.Sheets['材料'];
 
+  if (!worksheet) throw new Error('未找到材料表');
+
   // 获取所有单元格数据
   const data = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
@@ -161,7 +163,7 @@ function washData(data: string[][]) {
   const countTarget = findTarget(data, '本月发出数');
   const productTarget = findTarget(data, '品名');
 
-  if (!countTarget || !productTarget) throw new Error('未找到目标');
+  if (!countTarget || !productTarget) throw new Error('材料表未找到[本月发出数]或[品名]');
   const slimData = data
     .slice(countTarget[0] + 2)
     .filter(
