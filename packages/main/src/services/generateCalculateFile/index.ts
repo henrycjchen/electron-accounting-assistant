@@ -1,15 +1,17 @@
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
-import fs from 'fs';
 import handleCalculateFile from './handle-calculate-file';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
 
 export async function generateCalculateFile(files: Record<string, string>) {
-  const resultFileName = files.calculate.replace(/\d{4}/, dayjs().add(-1, 'month').format('YYMM'));
+  const dayStr = files.calculate.match(/\d{4}/)?.[0];
+  const day = dayjs(dayStr, 'YYMM');
+  const resultFileName = files.calculate.replace(/\d{4}/, day.add(1, 'month').format('YYMM'));
 
-  fs.copyFileSync(files.calculate, resultFileName);
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(resultFileName);
+  await workbook.xlsx.readFile(files.calculate);
 
   await handleCalculateFile(workbook, files);
-  workbook.xlsx.writeFile(resultFileName);
+  await workbook.xlsx.writeFile(resultFileName);
 }

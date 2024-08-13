@@ -4,6 +4,9 @@ import {getStringValue} from '/@/helpers/excel-helper';
 import type {IFormattedInboundInvoicesData, IFormattedOutboundInvoicesData} from '/@/types';
 import handleInboundData from '../common/handleInboundData';
 import handleOutboundData from '../common/handleOutboundData';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+
+dayjs.extend(customParseFormat);
 
 export default function handleCalculateFile(
   workbook: ExcelJS.Workbook,
@@ -20,6 +23,8 @@ export default function handleCalculateFile(
   handleSell(workbook, outboundData);
 
   handleMainPage(workbook, outboundData);
+
+  handleCostAccounting(workbook);
 }
 
 function handleCost(workbook: ExcelJS.Workbook) {
@@ -28,10 +33,9 @@ function handleCost(workbook: ExcelJS.Workbook) {
     throw new Error('没有找到生产成本月结表');
   }
 
-  sheet.getCell('A2').value = getStringValue(sheet.getCell('A2').value).replace(
-    /\d{4}\s*年\s*\d{1,2}\s*月/,
-    dayjs().add(-1, 'month').format('YYYY年MM月'),
-  );
+  const day = dayjs(getStringValue(sheet.getCell('D2').value), 'YYYY年MM月份');
+  sheet.getCell('D2').value = day.add(1, 'month').format('YYYY年MM月份');
+  console.log('day',day, day.add(1, 'month').format('YYYY年MM月份'));
 
   sheet.getCell('B5').value = Number(Number(sheet.getCell('E5').result).toFixed(2));
   sheet.getCell('B6').value = Number(Number(sheet.getCell('E6').result).toFixed(2));
@@ -42,6 +46,9 @@ function handleSalary(workbook: ExcelJS.Workbook) {
   if (!sheet) {
     throw new Error('没有找到工资表');
   }
+
+  const day = dayjs(getStringValue(sheet.getCell('A3').value), 'YYYY年MM月份');
+  sheet.getCell('A3').value = day.add(1, 'month').format('YYYY年MM月份');
 
   sheet.getCell('A2').value = getStringValue(sheet.getCell('A2').value).replace(
     /\d{4}\s*年\s*\d{1,2}\s*月/,
@@ -58,10 +65,9 @@ function handleMaterial(
     throw new Error('没有找到材料表');
   }
 
-  sheet.getCell('A3').value = getStringValue(sheet.getCell('A3').value).replace(
-    /\d{4}\s*年\s*\d{1,2}\s*月/,
-    dayjs().add(-1, 'month').format('YYYY年MM月'),
-  );
+  const day = dayjs(getStringValue(sheet.getCell('H3').value), 'YYYY年MM月份');
+  sheet.getCell('H3').value = day.add(1, 'month').format('YYYY年MM月份');
+
   let currentRow = 6;
   while (
     !sheet
@@ -96,7 +102,9 @@ function handleSell(
     throw new Error('没有找到销售成本表');
   }
 
-  sheet.getCell('F2').value = dayjs().add(-1, 'month').format('YYYY年MM月');
+  const day = dayjs(getStringValue(sheet.getCell('F2').value), 'YYYY年MM月份');
+  sheet.getCell('F2').value = day.add(1, 'month').format('YYYY年MM月份');
+
   let currentRow = 5;
   while (
     !sheet
@@ -122,6 +130,16 @@ function handleSell(
     }
     currentRow++;
   }
+}
+
+function handleCostAccounting(workbook: ExcelJS.Workbook) {
+  const sheet = workbook.getWorksheet('成本核算表');
+  if (!sheet) {
+    throw new Error('没有找到成本核算表');
+  }
+
+  const day = dayjs(getStringValue(sheet.getCell('D2').value), 'YYYY年MM月份');
+  sheet.getCell('D2').value = day.add(1, 'month').format('YYYY年MM月份');
 }
 
 function handleMainPage(

@@ -6,12 +6,15 @@ ipcMain.handle('generateOutboundFile', async (event, files: Record<string, strin
   if (!Object.values(files)?.length) {
     return;
   }
+  console.log('generateOutboundFile files', files);
   const invalidData = await generateOutboundFile(files);
 
   return invalidData;
 });
 
 ipcMain.handle('generateCalculateFile', async (event, files: Record<string, string>) => {
+  console.log('generateCalculateFile files', files);
+  
   if (!Object.values(files)?.length) {
     return;
   }
