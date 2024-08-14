@@ -1,21 +1,34 @@
 import {Flex, message, Select, Space} from 'antd';
 import {useState} from 'react';
 import UploadFiles from '../components/UploadFiles';
-import {generateCalculateFile} from '#preload';
 import ModifyCalculation from './components/ModifyCalculation';
+import InputForm from './components/InputForm';
+import {generateCalculateFile, getTableData} from '#preload';
 
 export default function CalculateTable() {
   const [company, setCompany] = useState<string>('捷锦');
   const [files, setFiles] = useState<Record<string, string>>({});
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [tableData, setTableData] = useState<Record<string, string>>({});
 
   async function handleUploadChange(uploads: Record<string, string>) {
     setFiles(uploads);
+
+    console.log('uploads.calculate', uploads.calculate);
+    if (uploads.calculate) {
+      const data = await getTableData(uploads.calculate);
+      console.log('uploads.calculate', data);
+      setTableData(data);
+    }
   }
 
   async function handleGenerateFile() {
     message.loading('生成中');
     try {
-      await generateCalculateFile(JSON.parse(JSON.stringify(files)));
+      await generateCalculateFile(
+        JSON.parse(JSON.stringify(files)),
+        JSON.parse(JSON.stringify(formValues)),
+      );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       message.error(e.message.match(/Error: ([^:]*)$/)?.[1] ?? e.message);
@@ -25,7 +38,7 @@ export default function CalculateTable() {
     message.success('生成完成');
   }
   return (
-    <Space direction="vertical">
+    <Space direction="vertical" style={{width: '100%'}}>
       <Flex
         gap="small"
         align="center"
@@ -41,7 +54,10 @@ export default function CalculateTable() {
         </Select>
       </Flex>
       <UploadFiles onChange={handleUploadChange} />
-
+      <InputForm
+        onSubmit={setFormValues}
+        initialValues={tableData}
+      />
       <ModifyCalculation
         files={files}
         onGenerateFile={handleGenerateFile}

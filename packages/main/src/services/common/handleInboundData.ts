@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import XLSX from 'xlsx';
-import { invalidProductTypes } from '/@/config';
-import type { IFormattedInboundInvoicesData } from '/@/types';
+import { invalidProductTypes } from '@/config';
+import type { IFormattedInboundInvoicesData } from '@/types';
 
 export default function handleInboundData(filePath: string) {
     const source = XLSX.readFile(filePath);

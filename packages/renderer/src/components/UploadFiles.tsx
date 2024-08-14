@@ -74,7 +74,7 @@ export default function UploadFiles({onChange}:{onChange: (files: Record<string,
             <Button
               type="text"
               size="small"
-              style={{position: 'absolute', right: '10px', top: '4px'}}
+              style={{position: 'absolute', right: '0', top: '0'}}
               onClick={e => {
                 e.stopPropagation();
                 handleRemoveClick('outboundInvoices');
@@ -113,7 +113,7 @@ export default function UploadFiles({onChange}:{onChange: (files: Record<string,
             <Button
               type="text"
               size="small"
-              style={{position: 'absolute', right: '10px', top: '4px'}}
+              style={{position: 'absolute', right: '0', top: '0'}}
               onClick={e => {
                 e.stopPropagation();
                 handleRemoveClick('calculate');
@@ -154,7 +154,7 @@ export default function UploadFiles({onChange}:{onChange: (files: Record<string,
             <Button
               type="text"
               size="small"
-              style={{position: 'absolute', right: '10px', top: '4px'}}
+              style={{position: 'absolute', right: '0', top: '0'}}
               onClick={e => {
                 e.stopPropagation();
                 handleRemoveClick('inboundInvoices');
