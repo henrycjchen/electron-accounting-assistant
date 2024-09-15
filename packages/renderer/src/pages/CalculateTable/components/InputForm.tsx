@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {Col, Flex, Form, InputNumber, Row} from 'antd';
+import {Flex, Form, InputNumber} from 'antd';
 import type {ICalculationForm, IInitCalculationForm} from '@@/types/types';
 import {useEffect} from 'react';
 import {css} from '@emotion/react';
+import React from 'react';
 
 export default function InputForm({
   onSubmit,
@@ -17,7 +18,7 @@ export default function InputForm({
     onSubmit(form.getFieldsValue());
   }, []);
 
-  const onFormLayoutChange = () => {
+  const onFormChange = () => {
     onSubmit(form.getFieldsValue());
   };
 
@@ -25,7 +26,7 @@ export default function InputForm({
     <Form
       size="small"
       form={form}
-      onValuesChange={onFormLayoutChange}
+      onValuesChange={onFormChange}
       css={css`
         .ant-form-item {
           margin-bottom: 5px;

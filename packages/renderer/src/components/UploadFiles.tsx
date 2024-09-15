@@ -1,9 +1,10 @@
-import {Button, Space, Upload} from 'antd';
+import {Button, Space} from 'antd';
 import type {UploadChangeParam} from 'antd/es/upload';
 import {useState} from 'react';
 import {produce} from 'immer';
 import {CloseOutlined, FileDoneOutlined, PlusOutlined} from '@ant-design/icons';
-import styled from '@emotion/styled';
+import { StyledUpload } from './StyledUpload';
+import React from 'react';
 
 export default function UploadFiles({onChange}:{onChange: (files: Record<string, string>) => void}) {
   const [fileNames, setFileNames] = useState<Record<string, string>>({
@@ -48,7 +49,7 @@ export default function UploadFiles({onChange}:{onChange: (files: Record<string,
     <Space>
       <Space direction="vertical">
         出库发票
-        <StyledUpdload
+        <StyledUpload
           name="avatar"
           listType="picture-card"
           showUploadList={false}
@@ -83,11 +84,11 @@ export default function UploadFiles({onChange}:{onChange: (files: Record<string,
               <CloseOutlined style={{color: 'gray'}} />
             </Button>
           ) : null}
-        </StyledUpdload>
+        </StyledUpload>
       </Space>
       <Space direction="vertical">
         测算表
-        <StyledUpdload
+        <StyledUpload
           name="avatar"
           listType="picture-card"
           showUploadList={false}
@@ -122,11 +123,11 @@ export default function UploadFiles({onChange}:{onChange: (files: Record<string,
               <CloseOutlined style={{color: 'gray'}} />
             </Button>
           ) : null}
-        </StyledUpdload>
+        </StyledUpload>
       </Space>
       <Space direction="vertical">
         购进发票
-        <StyledUpdload
+        <StyledUpload
           name="avatar"
           listType="picture-card"
           showUploadList={false}
@@ -163,20 +164,9 @@ export default function UploadFiles({onChange}:{onChange: (files: Record<string,
               <CloseOutlined style={{color: 'gray'}} />
             </Button>
           ) : null}
-        </StyledUpdload>
+        </StyledUpload>
       </Space>
     </Space>
   );
 }
 
-const StyledUpdload = styled(Upload)`
-  position: relative;
-  button {
-    display: none;
-  }
-  &:hover {
-    button {
-      display: block;
-    }
-  }
-`;

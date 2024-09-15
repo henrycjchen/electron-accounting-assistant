@@ -1,7 +1,14 @@
 import {Button, Space, Typography} from 'antd';
 import {useMemo} from 'react';
+import React from 'react';
 
-export default function ModifyCalculation({files, onGenerateFile}: {files: Record<string, string>; onGenerateFile: () => void}) {
+export default function ModifyCalculation({
+  files,
+  onGenerateFile,
+}: {
+  files: Record<string, string>;
+  onGenerateFile: () => void;
+}) {
   const requireFiles = useMemo(() => {
     const result: string[] = [];
     if (!files.outboundInvoices) {
@@ -23,7 +30,7 @@ export default function ModifyCalculation({files, onGenerateFile}: {files: Recor
         disabled={!!requireFiles.length}
         onClick={onGenerateFile}
       >
-        修改测算表
+        生成测算表
       </Button>
       {requireFiles.length ? (
         <Typography.Text>提示：请上传{requireFiles.join(', ')}</Typography.Text>

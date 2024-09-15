@@ -1,8 +1,9 @@
 import {message, Space} from 'antd';
-import UploadFiles from './components/UploadFiles';
+import UploadFiles from '../components/UploadFiles';
 import {useState} from 'react';
-import GenerateOutboundFile from './components/GenerateOutboundFile';
+import GenerateOutboundFile from '../components/GenerateOutboundFile';
 import {generateOutboundFile} from '#preload';
+import React from 'react';
 
 export default function Page() {
   const [files, setFiles] = useState<Record<string, string>>({});

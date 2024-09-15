@@ -2,9 +2,11 @@ import {Menu} from 'antd';
 import type {MenuProps} from 'antd';
 import {Link, Route, Routes} from 'react-router-dom';
 import {Outlet} from 'react-router-dom';
-import CreateCertificates from './CreateCertificates';
-import CalculateTable from './CalculateTable/CalculateTable';
+import CreateCertificates from './pages/CreateCertificates';
+import CalculateTable from './pages/CalculateTable/CalculateTable';
+import BillArrangement from './pages/BillArrangement';
 import {useState} from 'react';
+import React from 'react';
 
 export default function App() {
   return (
@@ -21,6 +23,10 @@ export default function App() {
           <Route
             path="calculate-table"
             element={<CalculateTable />}
+          />
+          <Route
+            path="bill-arrangement"
+            element={<BillArrangement />}
           />
         </Route>
       </Routes>
@@ -45,11 +51,15 @@ function Layout() {
         items={[
           {
             key: 'create-certificates',
-            label: <Link to="/">创建凭证</Link>,
+            label: <Link to="/">生成凭证</Link>,
           },
           {
             key: 'calculate-table',
-            label: <Link to="/calculate-table">测算表计算</Link>,
+            label: <Link to="/calculate-table">生成测算表</Link>,
+          },
+          {
+            key: 'bill-arrangement',
+            label: <Link to="/bill-arrangement">发票整理</Link>,
           },
         ]}
       />

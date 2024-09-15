@@ -8,6 +8,10 @@ export function generateCalculateFile(files: Record<string, string>, forms: Reco
   return ipcRenderer.invoke('generateCalculateFile', files, forms);
 }
 
+export function generateBillArrangement(file: string) {
+  return ipcRenderer.invoke('generateBillArrangement', file);
+}
+
 export function getTableData(filepath: string) {
   return ipcRenderer.invoke('getTableData', filepath);
 }

@@ -1,9 +1,10 @@
 import {Flex, message, Select, Space} from 'antd';
 import {useState} from 'react';
-import UploadFiles from '../components/UploadFiles';
+import UploadFiles from '@/components/UploadFiles';
 import ModifyCalculation from './components/ModifyCalculation';
 import InputForm from './components/InputForm';
 import {generateCalculateFile, getTableData} from '#preload';
+import React from 'react';
 
 export default function CalculateTable() {
   const [company, setCompany] = useState<string>('捷锦');
@@ -14,7 +15,6 @@ export default function CalculateTable() {
   async function handleUploadChange(uploads: Record<string, string>) {
     setFiles(uploads);
 
-    console.log('uploads.calculate', uploads.calculate);
     if (uploads.calculate) {
       const data = await getTableData(uploads.calculate);
       console.log('uploads.calculate', data);
@@ -38,7 +38,10 @@ export default function CalculateTable() {
     message.success('生成完成');
   }
   return (
-    <Space direction="vertical" style={{width: '100%'}}>
+    <Space
+      direction="vertical"
+      style={{width: '100%'}}
+    >
       <Flex
         gap="small"
         align="center"

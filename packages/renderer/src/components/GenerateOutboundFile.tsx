@@ -1,5 +1,6 @@
 import {Button, Space, Typography} from 'antd';
 import {useMemo} from 'react';
+import React from 'react';
 
 export default function GenerateOutboundFile({files, onClick}: {files: Record<string, string>; onClick: () => void}) {
   const outputFiles = useMemo(() => {
@@ -27,7 +28,7 @@ export default function GenerateOutboundFile({files, onClick}: {files: Record<st
         disabled={!outputFiles.length}
         onClick={onClick}
       >
-        生成
+        生成凭证
       </Button>
       {outputFiles.length ? (
         <Typography.Text v-if="outputFiles.length">
