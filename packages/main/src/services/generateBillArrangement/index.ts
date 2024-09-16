@@ -36,7 +36,7 @@ function handleSourceTable(workbook: ExcelJS.Workbook, sheetName: string, source
   const issueMap: Record<string, {source: string; deleted: boolean}> = {};
   newSheet.addRow(worksheet.getRow(1).values);
 
-  for (let rowNum = 2; rowNum < worksheet.rowCount; rowNum++) {
+  for (let rowNum = 2; rowNum <= worksheet.rowCount; rowNum++) {
     const row = worksheet.getRow(rowNum);
     const matched = (row.getCell(sourceColumnIndex).value as string)?.match(
       /被红冲蓝字数电票号码：(\d+)/,
@@ -51,7 +51,7 @@ function handleSourceTable(workbook: ExcelJS.Workbook, sheetName: string, source
     }
   }
 
-  for (let rowNum = 2; rowNum < worksheet.rowCount; rowNum++) {
+  for (let rowNum = 2; rowNum <= worksheet.rowCount; rowNum++) {
     const row = worksheet.getRow(rowNum);
     const matched = (row.getCell(sourceColumnIndex).value as string)?.match(
       /被红冲蓝字数电票号码：(\d+)/,
@@ -72,10 +72,11 @@ function nineThirteen(workbook: ExcelJS.Workbook) {
   const sheet1 = workbook.addWorksheet('信息汇总表9%13%专票')!;
   sheet1.addRow(sourceSheet1.getRow(1).values);
 
-  for (let rowNum = 2; rowNum < sourceSheet1.rowCount; rowNum++) {
+  for (let rowNum = 2; rowNum <= sourceSheet1.rowCount; rowNum++) {
     const row = sourceSheet1.getRow(rowNum);
     const taxRate = row.getCell('R').value as string | number;
-    if (['9%', 0.09, '13%', 0.13].includes(taxRate)) {
+    const taxType = row.getCell('V').value as string | number;
+    if (['9%', 0.09, '13%', 0.13].includes(taxRate) && taxType === '数电票（增值税专用发票）') {
       billNumMap[row.getCell('D').value as string] = true;
       sheet1.addRow(row.values);
     }
@@ -85,7 +86,7 @@ function nineThirteen(workbook: ExcelJS.Workbook) {
   const sheet2 = workbook.addWorksheet('发票基础信息9%13%专票')!;
   sheet2.addRow(sourceSheet2.getRow(1).values);
 
-  for (let rowNum = 2; rowNum < sourceSheet2.rowCount; rowNum++) {
+  for (let rowNum = 2; rowNum <= sourceSheet2.rowCount; rowNum++) {
     const row = sourceSheet2.getRow(rowNum);
     if (billNumMap[row.getCell('D').value as string]) {
       sheet2.addRow(row.values);
@@ -99,7 +100,7 @@ function six(workbook: ExcelJS.Workbook) {
   const sheet1 = workbook.addWorksheet('信息汇总表6%专票')!;
   sheet1.addRow(sourceSheet1.getRow(1).values);
 
-  for (let rowNum = 2; rowNum < sourceSheet1.rowCount; rowNum++) {
+  for (let rowNum = 2; rowNum <= sourceSheet1.rowCount; rowNum++) {
     const row = sourceSheet1.getRow(rowNum);
     const taxRate = row.getCell('R').value as string | number;
     if (['6%', 0.06].includes(taxRate)) {
@@ -112,7 +113,7 @@ function six(workbook: ExcelJS.Workbook) {
   const sheet2 = workbook.addWorksheet('发票基础信息6%专票')!;
   sheet2.addRow(sourceSheet2.getRow(1).values);
 
-  for (let rowNum = 2; rowNum < sourceSheet2.rowCount; rowNum++) {
+  for (let rowNum = 2; rowNum <= sourceSheet2.rowCount; rowNum++) {
     const row = sourceSheet2.getRow(rowNum);
     if (billNumMap[row.getCell('D').value as string]) {
       sheet2.addRow(row.values);
@@ -126,10 +127,11 @@ function rest(workbook: ExcelJS.Workbook) {
   const sheet1 = workbook.addWorksheet('信息汇总表普票')!;
   sheet1.addRow(sourceSheet1.getRow(1).values);
 
-  for (let rowNum = 2; rowNum < sourceSheet1.rowCount; rowNum++) {
+  for (let rowNum = 2; rowNum <= sourceSheet1.rowCount; rowNum++) {
     const row = sourceSheet1.getRow(rowNum);
     const taxRate = row.getCell('R').value as string | number;
-    if (!['6%', 0.06, '9%', 0.09, '13%', 0.13].includes(taxRate)) {
+    const taxType = row.getCell('V').value as string | number;
+    if (!['6%', 0.06].includes(taxRate) && !(['9%', 0.09, '13%', 0.13].includes(taxRate) && taxType === '数电票（增值税专用发票）')) {
       billNumMap[row.getCell('D').value as string] = true;
       sheet1.addRow(row.values);
     }
@@ -139,7 +141,7 @@ function rest(workbook: ExcelJS.Workbook) {
   const sheet2 = workbook.addWorksheet('发票基础信息普票')!;
   sheet2.addRow(sourceSheet2.getRow(1).values);
 
-  for (let rowNum = 2; rowNum < sourceSheet2.rowCount; rowNum++) {
+  for (let rowNum = 2; rowNum <= sourceSheet2.rowCount; rowNum++) {
     const row = sourceSheet2.getRow(rowNum);
     if (billNumMap[row.getCell('D').value as string]) {
       sheet2.addRow(row.values);
